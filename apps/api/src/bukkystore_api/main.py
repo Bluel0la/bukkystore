@@ -14,6 +14,8 @@ from bukkystore_api.admin_catalogue.router import router as admin_catalogue_rout
 from bukkystore_api.api import router
 from bukkystore_api.auth.router import router as auth_router
 from bukkystore_api.catalogue.router import router as catalogue_router
+from bukkystore_api.commerce.payments import PaymentProvider, build_payment_provider
+from bukkystore_api.commerce.router import router as commerce_router
 from bukkystore_api.config import Settings, get_settings
 from bukkystore_api.database import Database, DatabaseProtocol
 from bukkystore_api.errors import ApiError
@@ -25,7 +27,9 @@ logger = logging.getLogger(__name__)
 
 
 def create_app(
-    settings: Settings | None = None, database: DatabaseProtocol | None = None
+    settings: Settings | None = None,
+    database: DatabaseProtocol | None = None,
+    payment_provider: PaymentProvider | None = None,
 ) -> FastAPI:
     resolved_settings = settings or get_settings()
     configure_logging(resolved_settings.log_level)
@@ -34,6 +38,9 @@ def create_app(
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.settings = resolved_settings
         app.state.database = database or Database(str(resolved_settings.database_url))
+        app.state.payment_provider = payment_provider or build_payment_provider(
+            resolved_settings.payment_provider, str(resolved_settings.public_site_url)
+        )
         logger.info("application_started", extra={"environment": resolved_settings.environment})
         try:
             yield
@@ -62,6 +69,7 @@ def create_app(
     app.include_router(catalogue_router)
     app.include_router(auth_router)
     app.include_router(admin_catalogue_router)
+    app.include_router(commerce_router)
 
     @app.exception_handler(ApiError)
     async def api_error_handler(_request: Request, exc: ApiError) -> JSONResponse:

@@ -14,6 +14,7 @@ from bukkystore_api.catalogue.models import (
     ProductVariant,
     VariantStatus,
 )
+from bukkystore_api.commerce.models import DeliveryArea
 from bukkystore_api.config import get_settings
 from bukkystore_api.database import Database
 
@@ -56,9 +57,32 @@ async def seed_catalogue() -> bool:
     database = Database(str(get_settings().database_url))
     try:
         async with database.session_factory.begin() as session:
-            existing = await session.scalar(select(Category.id).where(Category.slug == "dresses"))
-            if existing is not None:
+            catalogue_exists = await session.scalar(
+                select(Category.id).where(Category.slug == "dresses")
+            )
+            delivery_exists = await session.scalar(
+                select(DeliveryArea.id).where(DeliveryArea.name == "Lagos Mainland")
+            )
+            if catalogue_exists is not None and delivery_exists is not None:
                 return False
+
+            if delivery_exists is None:
+                session.add_all(
+                    [
+                        DeliveryArea(
+                            name="Lagos Mainland",
+                            fee_minor=300_000,
+                            display_position=0,
+                        ),
+                        DeliveryArea(
+                            name="Lagos Island",
+                            fee_minor=450_000,
+                            display_position=1,
+                        ),
+                    ]
+                )
+            if catalogue_exists is not None:
+                return True
 
             clothing = Category(name="Clothing", slug="clothing", display_position=0)
             dresses = Category(name="Dresses", slug="dresses", parent=clothing, display_position=0)

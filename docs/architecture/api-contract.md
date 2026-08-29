@@ -45,6 +45,9 @@ GET  /orders/{order_number}/payment-status?token=...
 POST /payments/{provider}/webhook
 ```
 
+`GET /delivery-areas` and `POST /checkout` are implemented in this slice. Payment
+status and verified webhook routes remain the next payment-confirmation slice.
+
 The checkout request contains:
 
 ```json
@@ -73,8 +76,17 @@ The checkout request contains:
 ```
 
 The response contains the public order number, reservation expiry, server-computed
-summary, and hosted payment URL. It does not expose sequential database IDs or
-provider secrets.
+summary, high-entropy order access token, and hosted payment URL. It does not
+expose sequential database IDs or provider secrets. Reusing an idempotency key
+with the same request returns the same logical checkout; using it for a different
+request returns a conflict.
+
+Checkout locks variants in deterministic order, snapshots product and delivery
+details, and increments reservation counters in the same transaction. Payment
+initialization runs only after commit. A provider initialization failure cancels
+the pending order and releases the reservation. The reconciliation command expires
+overdue reservations in skip-locked batches and releases their counters exactly
+once.
 
 The public status route requires a high-entropy order access token, not merely an
 order number, to prevent enumeration of customer purchase state.

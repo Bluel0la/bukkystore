@@ -3,6 +3,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { CartLink } from "@/components/cart-link";
+import { ProductPurchasePanel } from "@/components/product-purchase-panel";
 import { CatalogueRequestError, formatNaira, getProduct } from "@/lib/catalogue";
 
 type ProductPageProps = { params: Promise<{ slug: string }> };
@@ -27,7 +29,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
     <main className="mx-auto min-h-screen max-w-5xl px-5 py-6 sm:px-8">
       <header className="mb-10 flex items-center justify-between border-b border-[var(--line)] pb-5">
         <Link className="text-xl font-semibold" href="/">Bukky Store</Link>
-        <Link className="text-sm" href="/#shop">Back to shop</Link>
+        <nav className="flex items-center gap-5 text-sm"><Link href="/#shop">Back to shop</Link><CartLink /></nav>
       </header>
       <div className="grid gap-10 md:grid-cols-2 md:items-start">
         <div className="relative flex aspect-[4/5] items-center justify-center overflow-hidden rounded-[2.5rem] border border-[var(--line)] bg-[var(--sand)] text-center">
@@ -49,18 +51,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
           <h1 className="mt-3 text-4xl font-semibold tracking-[-0.045em]">{product.name}</h1>
           <p className="mt-3 text-xl">{formatNaira(product.price_minor)}</p>
           <p className="mt-7 leading-7 text-[var(--muted)]">{product.description}</p>
-          <h2 className="mt-10 text-sm font-semibold uppercase tracking-[0.14em]">Available options</h2>
-          <div className="mt-4 grid gap-3">
-            {product.variants.map((variant) => (
-              <div className="flex items-center justify-between rounded-2xl border border-[var(--line)] bg-white p-4" key={variant.id}>
-                <div><p className="font-medium">{variant.display_name}</p>{variant.low_stock && variant.available && <p className="mt-1 text-xs text-[var(--wine)]">Low stock</p>}</div>
-                <span className={`text-sm ${variant.available ? "" : "text-[var(--muted)]"}`}>{variant.available ? formatNaira(variant.price_minor) : "Sold out"}</span>
-              </div>
-            ))}
-          </div>
-          <button className="mt-8 w-full rounded-full bg-[var(--ink)] px-6 py-4 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45" disabled type="button">
-            Checkout arrives in the next release
-          </button>
+          <ProductPurchasePanel product={product} />
         </section>
       </div>
     </main>

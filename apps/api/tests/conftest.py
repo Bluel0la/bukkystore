@@ -30,6 +30,9 @@ class EmptySession:
     async def scalars(self, _statement: object) -> EmptyScalarResult:
         return EmptyScalarResult()
 
+    async def get(self, _model: object, _identifier: object) -> None:
+        return None
+
     def add(self, _value: object) -> None:
         return None
 

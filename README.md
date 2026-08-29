@@ -5,9 +5,10 @@ small Lagos retailer. It is designed around guest checkout, social-media product
 links, WhatsApp enquiries, simple administration, variant-level inventory, and
 provider-verified payments.
 
-The project has its Release 0 foundation, public catalogue, and authenticated
-catalogue-management slices. Public browsing and the owner/admin product dashboard
-are backed by PostgreSQL. Checkout is the next delivery slice.
+The project has its foundation, public catalogue, authenticated catalogue
+management, and first commerce slice. Customers can keep a local shopping bag,
+choose a simple Lagos delivery area, and create a server-priced order with a timed
+stock reservation and provider-neutral payment handoff.
 
 ## Agreed product boundaries
 
@@ -75,8 +76,16 @@ bootstrapped only from this trusted local command. There is no public admin sign
 The dashboard is available at `http://localhost:3000/admin/login`.
 
 The development seed is idempotent and creates representative dresses, shoes, and
-bags with colour-and-size stock variants. Product photography remains intentionally
-empty until real store photos are supplied.
+bags with colour-and-size stock variants, plus provisional Lagos Mainland and
+Lagos Island delivery fees. Those fees are development defaults and must be
+confirmed with the store owner before launch. Product photography remains
+intentionally empty until real store photos are supplied.
+
+Run reservation expiry periodically so abandoned checkouts release their stock:
+
+```text
+uv run --project apps/api python -m bukkystore_api.commerce.reconcile
+```
 
 Run the quality gates with:
 

@@ -30,12 +30,16 @@ schema = schemathesis.openapi.from_asgi("/api/openapi.json", contract_app)
 def test_openapi_operations_do_not_violate_the_contract(case: Case) -> None:
     """Fuzz every documented operation and reject schema drift or unhandled errors."""
 
-    if case.operation.path == "/api/v1/admin/variants/{variant_id}/stock-adjustments":
+    protected_header_paths = {
+        "/api/v1/admin/variants/{variant_id}/stock-adjustments": "contract-test-key",
+        "/api/v1/checkout": "contract-checkout-key",
+    }
+    if case.operation.path in protected_header_paths:
         if case.headers is None:
             case.headers = {}
-        case.headers.setdefault("Idempotency-Key", "contract-test-key")
-        # Authentication intentionally runs before request-shape validation to
-        # avoid leaking protected endpoint details to anonymous callers.
+        case.headers.setdefault("Idempotency-Key", protected_header_paths[case.operation.path])
+        # FastAPI reports missing required headers with its documented 422
+        # validation response; Schemathesis currently expects 406 for this check.
         case.call_and_validate(excluded_checks=[missing_required_header])
         return
     case.call_and_validate()

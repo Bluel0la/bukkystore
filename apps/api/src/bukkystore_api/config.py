@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     environment: Literal["development", "test", "staging", "production"] = "development"
     database_url: PostgresDsn
     cors_origins: list[AnyHttpUrl] = Field(default_factory=list)
+    public_site_url: AnyHttpUrl = Field(default_factory=lambda: AnyHttpUrl("http://localhost:3000"))
     session_secret: SecretStr = Field(min_length=32)
     payment_provider: Literal["fake", "opay"] = "fake"
     reservation_minutes: int = Field(default=15, ge=5, le=30)

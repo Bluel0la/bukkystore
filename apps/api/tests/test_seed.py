@@ -8,6 +8,7 @@ from uuid import uuid4
 
 from bukkystore_api import seed
 from bukkystore_api.catalogue.models import Product
+from bukkystore_api.commerce.models import DeliveryArea
 
 
 class FakeSeedSession:
@@ -57,6 +58,10 @@ async def test_seed_creates_representative_catalogue(monkeypatch: Any) -> None:
         "brown-linen-dress",
         "black-evening-heel",
         "cream-day-bag",
+    }
+    assert {item.name for item in session.added if isinstance(item, DeliveryArea)} == {
+        "Lagos Mainland",
+        "Lagos Island",
     }
 
 

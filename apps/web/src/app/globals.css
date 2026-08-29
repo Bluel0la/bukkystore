@@ -67,3 +67,33 @@ a {
   cursor: wait;
   opacity: 0.55;
 }
+
+.checkout-input {
+  width: 100%;
+  min-height: 3.1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
+  background: white;
+  padding: 0.8rem 0.95rem;
+  color: var(--ink);
+  outline: none;
+}
+
+.checkout-input:focus {
+  border-color: var(--wine);
+  box-shadow: 0 0 0 3px rgb(111 36 57 / 10%);
+}
+
+.checkout-card {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 1.5rem;
+  background: rgb(255 255 255 / 88%);
+  padding: 1.5rem;
+}
+
+.checkout-card legend {
+  padding: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}

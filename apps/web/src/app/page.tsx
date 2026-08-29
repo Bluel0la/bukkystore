@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { BackendStatus } from "@/components/backend-status";
+import { CartLink } from "@/components/cart-link";
 import { ProductCard } from "@/components/product-card";
 import { getCategories, getProducts } from "@/lib/catalogue";
 
@@ -25,6 +26,7 @@ export default async function Home({ searchParams }: HomeProps) {
         </Link>
         <nav aria-label="Primary navigation" className="flex items-center gap-5 text-sm">
           <Link href="#shop">Shop</Link>
+          <CartLink />
           <Link className="rounded-full bg-[var(--ink)] px-4 py-2 text-white" href="/admin">
             Admin
           </Link>

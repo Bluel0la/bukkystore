@@ -97,6 +97,81 @@
             "  pm.expect(body.slug).to.eql('brown-linen-dress');",
             "  pm.expect(body.variants).to.be.an('array').that.is.not.empty;",
             "  pm.expect(body.variants[0]).to.have.property('available');",
+            "  const available = body.variants.find(variant => variant.available);",
+            "  if (available) { pm.collectionVariables.set('checkout_variant_id', available.id); }",
+            "});"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "Commerce",
+      "item": [
+        {
+          "name": "List delivery areas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/v1/delivery-areas", "host": ["{{base_url}}"], "path": ["api", "v1", "delivery-areas"] },
+            "description": "Returns active Lagos delivery areas and server-owned fees."
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
+            "pm.test('returns a configured delivery area', function () {",
+            "  const body = pm.response.json();",
+            "  pm.expect(body).to.be.an('array').that.is.not.empty;",
+            "  pm.collectionVariables.set('checkout_area_id', body[0].id);",
+            "});"
+          ] } }]
+        },
+        {
+          "name": "Reject unavailable delivery area",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "postman-safe-rejection-{{$guid}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer\": {\n    \"full_name\": \"Postman Checkout\",\n    \"phone\": \"08012345678\"\n  },\n  \"delivery\": {\n    \"area_id\": \"00000000-0000-0000-0000-000000000000\",\n    \"address\": \"12 Contract Test Street, Lagos\"\n  },\n  \"items\": [\n    {\n      \"variant_id\": \"{{checkout_variant_id}}\",\n      \"quantity\": 1\n    }\n  ]\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/v1/checkout", "host": ["{{base_url}}"], "path": ["api", "v1", "checkout"] },
+            "description": "Exercises checkout validation without creating an order in the configured database."
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('returns HTTP 404', function () { pm.response.to.have.status(404); });",
+            "pm.test('returns the safe delivery error', function () { pm.expect(pm.response.json().code).to.eql('delivery_area_not_found'); });"
+          ] } }]
+        },
+        {
+          "name": "Create checkout order",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "postman-checkout-{{$guid}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer\": {\n    \"full_name\": \"Postman Checkout\",\n    \"phone\": \"08012345678\",\n    \"email\": \"postman@bukkystore.invalid\"\n  },\n  \"delivery\": {\n    \"area_id\": \"{{checkout_area_id}}\",\n    \"address\": \"12 Contract Test Street, Lagos\",\n    \"directions\": \"Postman integration test\"\n  },\n  \"items\": [\n    {\n      \"variant_id\": \"{{checkout_variant_id}}\",\n      \"quantity\": 1\n    }\n  ],\n  \"attribution\": {\n    \"source\": \"postman\",\n    \"campaign\": \"contract-gate\"\n  }\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/v1/checkout", "host": ["{{base_url}}"], "path": ["api", "v1", "checkout"] },
+            "description": "Creates an awaiting-payment guest order, reserves exact variant stock, and initializes the configured payment provider."
+          },
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+              "if (String(pm.environment.get('run_checkout_write')).toLowerCase() !== 'true') { pm.execution.skipRequest(); }"
+            ] } },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('returns HTTP 201', function () { pm.response.to.have.status(201); });",
+            "pm.test('returns server-calculated totals and payment handoff', function () {",
+            "  const body = pm.response.json();",
+            "  pm.expect(body.order_status).to.eql('AWAITING_PAYMENT');",
+            "  pm.expect(body.payment_status).to.eql('PENDING');",
+            "  pm.expect(body.summary.total_minor).to.eql(body.summary.subtotal_minor + body.summary.delivery_fee_minor);",
+            "  pm.expect(body.payment_url).to.be.a('string').that.is.not.empty;",
+            "  pm.collectionVariables.set('postman_order_number', body.order_number);",
             "});"
           ] } }]
         }
@@ -105,6 +180,9 @@
     {
       "name": "Admin",
       "description": "Cookie-authenticated catalogue operations. Login captures the CSRF cookie for mutating requests.",
+      "event": [{ "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+        "if (!pm.environment.get('admin_email') || !pm.environment.get('admin_password')) { pm.execution.skipRequest(); }"
+      ] } }],
       "item": [
         {
           "name": "Login",
