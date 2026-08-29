@@ -1,0 +1,2372 @@
+#   
+  
+  
+Hii 👋🏽. Good. With those decisions fixed, we can establish a **baseline project specification** and treat it as our reference point going forward. I’ve also saved the core project context so we can return to it later without rebuilding the idea from scratch.  
+## Aunt’s Fashion Store — Reference Project Plan  
+## 1. Project Goal  
+Build a lightweight, mobile-first e-commerce platform for a small fashion business selling:  
+* Clothing  
+* Shoes  
+* Bags  
+* Fashion accessories  
+The system should prioritize two things:  
+**For customers:** discovering and buying products should take as few steps as possible.  
+**For your aunt:** adding products, changing stock, checking orders and viewing performance should require almost no technical knowledge.  
+The platform is therefore closer to:  
+**Instagram/TikTok-powered digital storefront + inventory + payments + analytics**  
+than a complex traditional e-commerce platform.  
+  
+⸻  
+  
+## 2. Core Business Assumptions  
+These are our current project assumptions.  
+
+| Area               | Decision                                    |
+| ------------------ | ------------------------------------------- |
+| Business type      | Small fashion retailer                      |
+| Products           | Clothes, shoes, bags, accessories           |
+| Inventory          | Multiple units per product                  |
+| Product variations | Sizes, colours, shoe sizes where applicable |
+| Delivery           | Within one city                             |
+| Payment            | OPay initially                              |
+| Customer accounts  | Not required                                |
+| Checkout           | Guest checkout                              |
+| Customer support   | WhatsApp                                    |
+| Marketing channels | TikTok, Instagram, WhatsApp                 |
+| Main admin user    | Your aunt                                   |
+| Admin UX priority  | Extremely simple                            |
+| Primary device     | Mobile-first, including admin               |
+| Architecture       | Modular monolith                            |
+  
+This prevents unnecessary complexity.  
+  
+⸻  
+  
+## 3. High-Level User Journey  
+The primary customer journey should be:  
+```
+TikTok / Instagram / WhatsApp
+             │
+             ▼
+       Product Link
+             │
+             ▼
+       Product Page
+             │
+       ┌─────┴─────┐
+       ▼           ▼
+    Buy Now     Add to Cart
+       │           │
+       └─────┬─────┘
+             ▼
+          Checkout
+             │
+             ▼
+        OPay Payment
+             │
+             ▼
+      Payment Verified
+             │
+             ▼
+        Order Created
+             │
+             ▼
+      Aunt sees order
+             │
+             ▼
+      Local delivery
+
+```
+Customers should also be able to branch into:  
+```
+Product Page
+     │
+     ▼
+WhatsApp Aunt
+
+```
+at any stage where they need clarification.  
+  
+⸻  
+  
+## 4. The System Will Have Two Interfaces  
+## A. Public Storefront  
+Used by customers.  
+Main screens:  
+```
+Home
+Products
+Categories
+Product Details
+Cart
+Checkout
+Payment Result
+Order Confirmation
+
+```
+## B. Admin Dashboard  
+Used primarily by your aunt.  
+Main screens:  
+```
+Dashboard
+Products
+Orders
+Analytics
+Store Settings
+
+```
+The admin interface should work well from her phone.  
+I would deliberately avoid requiring a laptop for normal management.  
+  
+⸻  
+  
+## 5. Storefront  
+## Home Page  
+The home page can contain:  
+```
+Logo
+
+Search
+
+New Arrivals
+
+Featured Products
+
+Categories
+- Dresses
+- Tops
+- Trousers
+- Shoes
+- Bags
+- Accessories
+
+Popular Products
+
+WhatsApp Contact
+
+Footer
+
+```
+We don’t need dozens of sections initially.  
+  
+⸻  
+  
+## 6. Product Catalogue  
+Customers should be able to filter products by things such as:  
+```
+Category
+
+Price
+
+Availability
+
+Size
+
+```
+Potentially later:  
+```
+Colour
+New arrivals
+Popular
+Sale
+
+```
+A product card only needs:  
+```
+Image
+
+Product Name
+
+Price
+
+Optional old price
+
+Availability
+
+```
+For example:  
+```
+┌────────────────────┐
+│                    │
+│     PRODUCT        │
+│       IMAGE        │
+│                    │
+├────────────────────┤
+│ Brown Linen Set    │
+│ ₦18,500            │
+│ In Stock           │
+└────────────────────┘
+
+```
+  
+⸻  
+  
+## 7. Product Model  
+Because the store sells different types of fashion products, the product system needs to support optional variants.  
+For example:  
+**Dress**  
+```
+Product
+Brown Maxi Dress
+
+Variants
+S / Brown
+M / Brown
+L / Brown
+XL / Brown
+
+```
+**Shoes**  
+```
+Product
+Black Leather Heel
+
+Variants
+Size 37
+Size 38
+Size 39
+Size 40
+Size 41
+
+```
+**Bag**  
+A bag might have:  
+```
+Black
+Brown
+Cream
+
+```
+with no size.  
+Therefore variants should be flexible rather than hardcoded exclusively around clothing sizes.  
+  
+⸻  
+  
+## 8. Product Data Structure  
+At a conceptual level:  
+```
+Product
+
+id
+name
+slug
+description
+category
+price
+discount_price
+status
+featured
+created_at
+updated_at
+
+```
+Images live separately:  
+```
+ProductImage
+
+id
+product_id
+image_url
+position
+
+```
+Variants:  
+```
+ProductVariant
+
+id
+product_id
+
+size
+colour
+
+stock_quantity
+
+sku
+status
+
+```
+The important field is:  
+```
+stock_quantity
+
+```
+Because we know she owns multiple units.  
+  
+⸻  
+  
+## 9. Inventory Management  
+Inventory should operate at variant level.  
+Suppose she has:  
+```
+Brown Linen Set
+
+S    3
+M    7
+L    4
+XL   2
+
+```
+A customer buys:  
+```
+M × 2
+
+```
+After successful payment:  
+```
+M = 5
+
+```
+Automatically.  
+When:  
+```
+quantity = 0
+
+```
+that specific variant becomes unavailable.  
+For example:  
+```
+Size
+
+[S] [M] [L] [XL]
+
+         ↑
+       disabled
+
+```
+if L is sold out.  
+The entire product only displays:  
+Sold Out  
+when **every variant has no stock**.  
+  
+⸻  
+  
+## 10. Important Inventory Rule  
+We should **not reduce stock when somebody merely adds something to their cart.**  
+Otherwise abandoned carts could make real inventory appear unavailable.  
+The safe early implementation is:  
+```
+Product added to cart
+         ↓
+No inventory change
+
+Checkout begins
+         ↓
+No permanent inventory change
+
+Payment succeeds
+         ↓
+Verify transaction
+         ↓
+Reduce inventory
+
+```
+Later, if order volume becomes high enough, we can implement temporary stock reservation during checkout.  
+For this store, that’s unnecessary initially.  
+  
+⸻  
+  
+## 11. Product Creation Flow for Your Aunt  
+The main screen:  
+```
+Products
+
+Search products...
+
+[ + Add Product ]
+
+Brown Maxi Dress        In Stock
+Black Heel              Low Stock
+Cream Bag               Sold Out
+
+```
+Pressing **Add Product**:  
+```
+Add Product
+
+Photos
+[ + Upload Photos ]
+
+Product name
+__________________
+
+Category
+[Dresses ▼]
+
+Price
+₦ ________________
+
+Description
+__________________
+
+Variants
+
+Colour
+[Brown]
+
+Sizes
+☑ S
+☑ M
+☑ L
+☑ XL
+
+Stock
+S  [3]
+M  [7]
+L  [4]
+XL [2]
+
+[Publish]
+
+```
+Behind the scenes, the system can create four ProductVariant records.  
+Your aunt never has to know that.  
+  
+⸻  
+  
+## 12. Categories  
+Start with something like:  
+```
+Clothing
+    Dresses
+    Tops
+    Shirts
+    Trousers
+    Skirts
+    Sets
+
+Shoes
+
+Bags
+
+Accessories
+
+```
+However, we should **not hard-code categories into the application**.  
+She should eventually be able to add one herself:  
+```
++ Add Category
+
+```
+For example:  
+```
+Kaftans
+
+```
+without us touching code.  
+  
+⸻  
+  
+## 13. Product URLs  
+Every product receives a human-readable slug.  
+Example:  
+```
+/store/brown-linen-two-piece
+
+```
+or preferably:  
+```
+domain.com/products/brown-linen-two-piece
+
+```
+Instead of:  
+```
+domain.com/products/928ce932-2432-...
+
+```
+The UUID still exists internally.  
+The slug exists for people and search engines.  
+  
+⸻  
+  
+## 14. Social Media Product Links  
+This is a fundamental feature rather than an afterthought.  
+From the dashboard:  
+```
+Brown Linen Set
+
+[Edit]
+[Share]
+
+```
+Selecting Share:  
+```
+Share Product
+
+Instagram
+TikTok
+WhatsApp
+Copy Product Link
+
+```
+The underlying links can contain attribution.  
+TikTok:  
+```
+/products/brown-linen-set?ref=tiktok
+
+```
+Instagram:  
+```
+/products/brown-linen-set?ref=instagram
+
+```
+WhatsApp:  
+```
+/products/brown-linen-set?ref=whatsapp
+
+```
+Later we can become more granular:  
+```
+?utm_source=tiktok
+&utm_campaign=august_collection
+&utm_content=brown_linen_video
+
+```
+But ref is enough for the first implementation.  
+  
+⸻  
+  
+## 15. Social Content Attribution  
+Suppose she uploads three videos about one dress.  
+We can eventually generate:  
+```
+/products/maxi-dress?ref=tiktok&campaign=video1
+
+```
+and:  
+```
+/products/maxi-dress?ref=tiktok&campaign=video2
+
+```
+Then analytics could show:  
+```
+Maxi Dress TikTok Campaign
+
+Video 1
+327 visitors
+12 purchases
+
+Video 2
+1,420 visitors
+73 purchases
+
+```
+This gives her actual evidence about what kind of content converts viewers into customers.  
+That is an excellent eventual differentiator for the platform.  
+  
+⸻  
+  
+## 16. WhatsApp Integration  
+Each product should have:  
+```
+Ask on WhatsApp
+
+```
+Instead of opening an empty WhatsApp conversation, we’ll create a prefilled message.  
+Example:  
+```
+Hello, I'm interested in the Brown Linen Two-Piece Set.
+
+Price: ₦18,500
+
+Product:
+https://store.com/products/brown-linen-set
+
+```
+Customer taps the button and WhatsApp opens with the message prepared.  
+Your aunt simply receives it.  
+No WhatsApp Business API is required for V1.  
+  
+⸻  
+  
+## 17. WhatsApp Analytics  
+Whenever the button is clicked:  
+```
+event_type = whatsapp_click
+
+```
+We associate:  
+```
+product_id
+session_id
+source
+timestamp
+
+```
+So her dashboard can display:  
+```
+Brown Linen Set
+
+642 views
+91 WhatsApp enquiries
+27 purchases
+
+```
+That is much more meaningful than views alone.  
+  
+⸻  
+  
+## 18. Cart  
+Cart state can initially exist primarily client-side.  
+For example:  
+```
+{
+    "items": [
+        {
+            "variant_id": "...",
+            "quantity": 2
+        }
+    ]
+}
+
+```
+The frontend sends those IDs when checkout begins.  
+However:  
+**The frontend must never decide the final price.**  
+Suppose somebody manipulates:  
+```
+₦25,000
+
+```
+into:  
+```
+₦200
+
+```
+using browser dev tools.  
+Our backend ignores the submitted price.  
+It retrieves:  
+```
+variant
+    ↓
+product
+    ↓
+database price
+
+```
+and calculates the total itself.  
+Important rule:  
+**The backend is the authority for price, stock and payment amount.**  
+  
+⸻  
+  
+## 19. Checkout  
+Checkout should be guest-based.  
+Fields:  
+```
+Full Name *
+
+Phone Number *
+
+Delivery Address *
+
+Delivery Area *
+
+Additional Directions
+
+Email
+
+```
+Email can be optional.  
+Phone should be mandatory.  
+Because this is a local Nigerian fashion business, phone/WhatsApp communication is probably much more operationally useful than email.  
+  
+⸻  
+  
+## 20. City Delivery Model  
+Because delivery is within a single city, we don’t need shipping APIs initially.  
+Instead, we can create **delivery zones**.  
+For example:  
+```
+Zone A
+₦1,500
+
+Zone B
+₦2,000
+
+Zone C
+₦2,500
+
+```
+The specific areas depend on the city.  
+Conceptually:  
+```
+DeliveryZone
+
+id
+name
+fee
+active
+
+```
+And possibly:  
+```
+DeliveryArea
+
+id
+zone_id
+name
+
+```
+Example:  
+```
+ZONE A — ₦1,500
+Area One
+Area Two
+Area Three
+
+ZONE B — ₦2,000
+Area Four
+Area Five
+
+```
+At checkout:  
+```
+Delivery Area
+
+[Choose area ▼]
+
+Ikeja
+
+Delivery: ₦2,000
+
+```
+Then:  
+```
+Products       ₦18,500
+Delivery        ₦2,000
+────────────────────────
+Total          ₦20,500
+
+```
+This is much simpler and safer than attempting dynamic distance calculation initially.  
+  
+⸻  
+  
+## 21. Admin Delivery Settings  
+Your aunt could later have:  
+```
+Store Settings
+  ↓
+Delivery
+
+```
+with:  
+```
+Ikeja       ₦2,000
+Yaba        ₦2,500
+Surulere    ₦2,000
+Lekki       ₦3,500
+
+```
+She can change pricing without us redeploying anything.  
+That is important.  
+**Business settings should live in the database, not source code.**  
+  
+⸻  
+  
+## 22. OPay Payment Architecture  
+For our initial integration I would favour OPay’s hosted/checkout approach rather than collecting card information ourselves.  
+OPay currently documents both pre-built checkout approaches and direct server APIs. Their server-side APIs also expose payment creation, transaction status and payment notifications.   
+That’s ideal because we don’t want:  
+```
+Card number
+CVV
+Expiry
+
+```
+ever flowing through our own application unless there is a compelling reason.  
+  
+⸻  
+  
+## 23. OPay Checkout Flow  
+Our flow should look like:  
+```
+Customer
+   │
+   ▼
+Checkout form
+   │
+   ▼
+POST /checkout
+   │
+   ▼
+FastAPI validates cart
+   │
+   ├── products exist
+   ├── variants exist
+   ├── stock available
+   ├── calculate subtotal
+   ├── calculate delivery
+   └── calculate final total
+   │
+   ▼
+Create pending order
+   │
+   ▼
+Create OPay transaction
+   │
+   ▼
+Receive checkout/payment URL
+   │
+   ▼
+Frontend redirects customer
+   │
+   ▼
+Customer pays through OPay
+
+```
+But this is **not yet enough to mark the order as paid**.  
+  
+⸻  
+  
+## 24. OPay Webhook  
+OPay supports payment notification callbacks. Their documentation describes configuring a callback endpoint that receives transaction-status notifications from OPay.   
+So we’d expose something like:  
+```
+POST /api/v1/payments/opay/webhook
+
+```
+Flow:  
+```
+OPay
+ │
+ │ Payment status changed
+ ▼
+Webhook
+ │
+ ▼
+FastAPI
+ │
+ ├── validate callback
+ ├── find transaction
+ ├── check reference
+ ├── verify payment
+ ├── ensure amount matches
+ └── update order
+
+```
+Then:  
+```
+PENDING
+    ↓
+PAID
+
+```
+Only then do we:  
+```
+Reduce stock
+Record sale
+Record analytics
+
+```
+  
+⸻  
+  
+## 25. Payment Verification  
+We should have both:  
+```
+Webhook verification
+
+```
+and:  
+```
+Payment status query
+
+```
+OPay’s documentation exposes payment-status APIs specifically for transaction verification.   
+So even if:  
+```
+Webhook fails
+
+```
+we can query OPay directly using the transaction reference.  
+  
+⸻  
+  
+## 26. OPay Security  
+OPay currently uses API-key based authentication and distinguishes secret/public credentials depending on API operation. Their documentation explicitly warns against committing secret keys to Git or placing them in client-side code.   
+Our environment therefore contains:  
+```
+OPAY_MERCHANT_ID
+OPAY_PUBLIC_KEY
+OPAY_SECRET_KEY
+
+```
+Only FastAPI knows them.  
+Never:  
+```
+Next.js client bundle
+localStorage
+GitHub
+frontend .env exposed variables
+
+```
+  
+⸻  
+  
+## 27. Order State Machine  
+Orders should not merely have:  
+```
+paid = true/false
+
+```
+Use statuses.  
+Initially:  
+```
+PENDING_PAYMENT
+        │
+        ▼
+       PAID
+        │
+        ▼
+   PROCESSING
+        │
+        ▼
+OUT_FOR_DELIVERY
+        │
+        ▼
+    COMPLETED
+
+```
+Alternative paths:  
+```
+PENDING_PAYMENT → CANCELLED
+
+PAID → REFUNDED
+
+```
+So:  
+```
+OrderStatus
+
+pending_payment
+paid
+processing
+out_for_delivery
+completed
+cancelled
+refunded
+
+```
+  
+⸻  
+  
+## 28. Payment Status Is Separate  
+Don’t make payment status and order status the same thing.  
+Payment:  
+```
+PENDING
+SUCCESS
+FAILED
+REFUNDED
+
+```
+Order:  
+```
+PENDING_PAYMENT
+PAID
+PROCESSING
+OUT_FOR_DELIVERY
+COMPLETED
+CANCELLED
+
+```
+This distinction becomes important later.  
+  
+⸻  
+  
+## 29. Orders Database  
+Conceptually:  
+```
+Order
+
+id
+order_number
+
+customer_name
+customer_phone
+customer_email
+
+delivery_address
+delivery_area
+delivery_fee
+
+subtotal
+total
+
+status
+
+source
+
+created_at
+updated_at
+
+```
+Then:  
+```
+OrderItem
+
+id
+order_id
+product_id
+variant_id
+
+product_name
+variant_description
+
+unit_price
+quantity
+subtotal
+
+```
+Notice that I include:  
+```
+product_name
+unit_price
+
+```
+inside the order item even though they exist in products.  
+That’s deliberate.  
+If she changes:  
+```
+₦18,000 → ₦22,000
+
+```
+tomorrow, yesterday’s order should still say:  
+```
+₦18,000
+
+```
+Orders are historical records.  
+  
+⸻  
+  
+## 30. Payment Database  
+Something along the lines of:  
+```
+Payment
+
+id
+order_id
+
+provider
+provider_reference
+
+amount
+currency
+
+status
+
+raw_response
+
+created_at
+updated_at
+
+```
+Example:  
+```
+provider = OPAY
+currency = NGN
+
+```
+This structure means adding something like Paystack later becomes straightforward.  
+  
+⸻  
+  
+## 31. Analytics  
+I want us to distinguish three things:  
+**Traffic**  
+```
+Store views
+Product views
+Traffic source
+
+```
+**Engagement**  
+```
+Product clicks
+WhatsApp clicks
+Add to cart
+Checkout started
+
+```
+**Conversion**  
+```
+Payments started
+Purchases
+Revenue
+
+```
+  
+⸻  
+  
+## 32. Analytics Event Model  
+Rather than adding:  
+```
+product.view_count += 1
+
+```
+everywhere, build an event stream.  
+Conceptually:  
+```
+AnalyticsEvent
+
+id
+
+event_type
+
+product_id
+session_id
+
+source
+campaign
+
+metadata
+
+created_at
+
+```
+Potential events:  
+```
+store_view
+
+product_view
+
+add_to_cart
+
+remove_from_cart
+
+buy_now_click
+
+whatsapp_click
+
+checkout_started
+
+payment_started
+
+payment_success
+
+order_completed
+
+```
+  
+⸻  
+  
+## 33. Why Events Instead of Counters?  
+Suppose we only store:  
+```
+product_views = 2192
+
+```
+We know nothing else.  
+With events we can answer:  
+```
+When?
+From where?
+Which campaign?
+Did they purchase afterward?
+
+```
+So:  
+```
+TikTok
+   ↓
+Product View
+   ↓
+Add to Cart
+   ↓
+Checkout
+   ↓
+Purchase
+
+```
+can belong to one anonymous:  
+```
+session_id
+
+```
+No login needed.  
+  
+⸻  
+  
+## 34. Anonymous Sessions  
+On first visit:  
+```
+session_id = random UUID
+
+```
+stored in a cookie.  
+Example:  
+```
+a8e9c...
+
+```
+Then events can be linked.  
+Importantly, we don’t need to track invasive personal information.  
+We’re mainly interested in:  
+```
+session
+source
+product
+action
+timestamp
+
+```
+  
+⸻  
+  
+## 35. Conversion Funnel  
+Her dashboard might eventually show:  
+```
+This Month
+
+2,470 Store Visitors
+        ↓
+1,382 Product Views
+        ↓
+  341 Add to Cart
+        ↓
+  181 Checkout
+        ↓
+   96 Purchases
+
+```
+With:  
+```
+Conversion rate:
+
+96 / 2470 = 3.89%
+
+```
+  
+⸻  
+  
+## 36. Product Analytics  
+Selecting one product:  
+```
+Brown Linen Set
+────────────────────────
+
+Views              472
+
+Added to Cart       83
+
+Checkout             41
+
+Purchases            26
+
+WhatsApp Clicks      72
+
+Revenue         ₦481,000
+
+```
+And:  
+```
+Traffic
+
+TikTok       58%
+Instagram    24%
+WhatsApp     13%
+Direct        5%
+
+```
+Very actionable without being overwhelming.  
+  
+⸻  
+  
+## 37. Dashboard Design  
+Her default dashboard should **not show everything**.  
+I’d give her five cards:  
+```
+Sales
+
+Orders
+
+Visitors
+
+WhatsApp Enquiries
+
+Products Low in Stock
+
+```
+Then:  
+```
+Top Products
+
+```
+and:  
+```
+Recent Orders
+
+```
+Everything else stays under Analytics.  
+  
+⸻  
+  
+## 38. Low Stock Notifications  
+This becomes particularly useful.  
+Each variant could have:  
+```
+low_stock_threshold = 2
+
+```
+So dashboard:  
+```
+⚠ Low Stock
+
+Brown Linen Set — Medium
+2 left
+
+Black Heel — Size 39
+1 left
+
+```
+Eventually:  
+```
+🔴 Out of Stock
+
+```
+That will probably be more useful to your aunt than complicated inventory reports.  
+  
+⸻  
+  
+## 39. Authentication  
+Only the admin needs authentication initially.  
+We don’t need:  
+```
+customer accounts
+customer passwords
+email verification
+customer dashboards
+
+```
+Admin could use:  
+```
+email
+password
+
+```
+with:  
+```
+JWT access token
+refresh token
+
+```
+or secure session-based auth.  
+Because there may eventually be:  
+```
+Aunt
+Assistant
+You
+
+```
+I’d still model:  
+```
+User
+
+```
+rather than hardcoding one administrator.  
+  
+⸻  
+  
+## 40. Roles — Future-Proofing Without Complexity  
+Potentially:  
+```
+OWNER
+ADMIN
+STAFF
+
+```
+But for V1:  
+```
+OWNER
+
+```
+is enough.  
+We can build authorization properly without exposing role management in the UI yet.  
+  
+⸻  
+  
+## 41. Proposed Backend Modules  
+FastAPI project:  
+```
+app/
+│
+├── auth/
+├── users/
+├── products/
+├── categories/
+├── inventory/
+├── orders/
+├── payments/
+├── delivery/
+├── analytics/
+├── settings/
+│
+├── integrations/
+│   ├── opay/
+│   └── whatsapp/
+│
+├── database/
+├── core/
+└── main.py
+
+```
+Still one application.  
+Not microservices.  
+  
+⸻  
+  
+## 42. API Structure  
+Something approximately like:  
+```
+/api/v1
+
+```
+**Products**  
+```
+GET    /products
+GET    /products/{slug}
+
+POST   /admin/products
+PATCH  /admin/products/{id}
+DELETE /admin/products/{id}
+
+```
+**Categories**  
+```
+GET  /categories
+
+POST /admin/categories
+
+```
+**Orders**  
+```
+POST /checkout
+
+GET   /admin/orders
+GET   /admin/orders/{id}
+PATCH /admin/orders/{id}/status
+
+```
+**Payments**  
+```
+POST /payments/opay/create
+POST /payments/opay/webhook
+
+GET /payments/{reference}/status
+
+```
+**Analytics**  
+```
+POST /analytics/events
+
+GET /admin/analytics/overview
+GET /admin/analytics/products/{id}
+GET /admin/analytics/sources
+
+```
+**Delivery**  
+```
+GET /delivery/areas
+
+POST  /admin/delivery/areas
+PATCH /admin/delivery/areas/{id}
+
+```
+  
+⸻  
+  
+## 43. Checkout Endpoint  
+One thing I’d probably do differently from simplistic designs is make:  
+```
+POST /checkout
+
+```
+the central transaction coordinator.  
+Request:  
+```
+{
+  "customer": {},
+  "delivery_area_id": "...",
+  "items": []
+}
+
+```
+Backend performs:  
+```
+Validate products
+
+Validate variants
+
+Check stock
+
+Fetch prices
+
+Calculate subtotal
+
+Calculate delivery fee
+
+Calculate total
+
+Create pending order
+
+Initialize payment
+
+```
+Then returns:  
+```
+{
+  "order_number": "...",
+  "payment_url": "..."
+}
+
+```
+This keeps checkout consistent.  
+  
+⸻  
+  
+## 44. Frontend  
+My preference remains:  
+**Next.js**  
+Primarily because the storefront benefits from:  
+* good SEO  
+* server rendering  
+* dynamic metadata  
+* proper product previews when sharing links  
+* easy Vercel deployment  
+Admin and storefront can initially exist within the same Next.js application.  
+For example:  
+```
+/
+ /products
+ /products/[slug]
+ /cart
+ /checkout
+ /order/[number]
+
+ /admin
+ /admin/products
+ /admin/orders
+ /admin/analytics
+ /admin/settings
+
+```
+No need for two React repositories initially.  
+  
+⸻  
+  
+## 45. Styling  
+I would use:  
+```
+Tailwind CSS
+
+```
+with perhaps:  
+```
+shadcn/ui
+
+```
+for the admin dashboard.  
+But storefront design should remain custom enough that it doesn’t look like a generic admin template.  
+  
+⸻  
+  
+## 46. Backend Stack  
+I’d propose:  
+```
+Python
+FastAPI
+Pydantic
+SQLAlchemy
+Alembic
+PostgreSQL
+
+```
+Authentication:  
+```
+JWT or secure session
+
+```
+Testing:  
+```
+pytest
+
+```
+HTTP client for OPay:  
+```
+httpx
+
+```
+  
+⸻  
+  
+## 47. Database  
+**Supabase PostgreSQL** is still a good fit.  
+But I would use Supabase primarily as:  
+managed PostgreSQL infrastructure  
+rather than making the whole project dependent on Supabase-specific abstractions.  
+This keeps our FastAPI backend portable.  
+  
+⸻  
+  
+## 48. Product Image Storage  
+Use either:  
+**Cloudinary**  
+or  
+**Supabase Storage.**  
+For fashion, I currently lean toward **Cloudinary** because image transformation will be useful.  
+For example we can automatically produce:  
+```
+thumbnail
+product card
+product detail
+social preview
+
+```
+from one upload.  
+That matters when customers may be browsing on mobile data.  
+  
+⸻  
+  
+## 49. Image Upload Experience  
+Your aunt shouldn’t resize anything manually.  
+She uploads:  
+```
+IMG_4837.JPG
+7.3 MB
+
+```
+and our system handles:  
+```
+compression
+format optimization
+thumbnail generation
+
+```
+automatically.  
+  
+⸻  
+  
+## 50. Deployment  
+A sensible first production setup:  
+```
+Frontend
+Next.js
+Vercel
+
+Backend
+FastAPI
+Render
+
+Database
+Supabase PostgreSQL
+
+Images
+Cloudinary
+
+Payments
+OPay
+
+```
+Architecture:  
+```
+                    INTERNET
+
+                       │
+                       ▼
+
+                 ┌───────────┐
+                 │  Next.js  │
+                 │  Vercel   │
+                 └─────┬─────┘
+                       │
+                    HTTPS
+                       │
+                       ▼
+                 ┌───────────┐
+                 │  FastAPI  │
+                 │  Render   │
+                 └─────┬─────┘
+                       │
+      ┌────────────────┼───────────────┐
+      │                │               │
+      ▼                ▼               ▼
+ PostgreSQL        Cloudinary         OPay
+ Supabase           Images           Payments
+
+```
+  
+⸻  
+  
+## 51. Recommended Database Tables  
+For the first serious version:  
+```
+users
+
+categories
+
+products
+product_images
+product_variants
+
+delivery_areas
+
+orders
+order_items
+
+payments
+
+analytics_events
+
+store_settings
+
+```
+That’s only **11 core tables**.  
+Very reasonable.  
+  
+⸻  
+  
+## 52. Store Settings  
+Don’t scatter business details around the database.  
+Have:  
+```
+store_settings
+
+```
+for:  
+```
+store_name
+logo
+whatsapp_number
+phone_number
+instagram_url
+tiktok_url
+currency
+city
+minimum_order
+
+```
+Potentially:  
+```
+address
+business_hours
+
+```
+later.  
+  
+⸻  
+  
+## 53. MVP Boundary  
+This part is important.  
+## YES — MVP  
+```
+Product management
+Categories
+Images
+Variants
+Stock
+
+Storefront
+Search
+Cart
+Buy Now
+
+Guest checkout
+City delivery fees
+
+OPay
+Payment verification
+
+Orders
+
+WhatsApp
+
+Product share links
+
+Traffic attribution
+
+Basic analytics
+
+Mobile admin dashboard
+
+```
+## NO — MVP  
+Do **not** build yet:  
+```
+Customer accounts
+
+Wishlists
+
+Reviews
+
+Loyalty points
+
+Gift cards
+
+Coupons
+
+Multiple vendors
+
+Multiple warehouses
+
+Live delivery tracking
+
+Dispatch rider integration
+
+AI recommendations
+
+Email marketing
+
+SMS marketing
+
+Complex CRM
+
+TikTok API integration
+
+Instagram API integration
+
+Mobile app
+
+Push notifications
+
+```
+Those are classic scope-creep traps.  
+  
+⸻  
+  
+## 54. Development Roadmap  
+I would divide the actual coding into **eight milestones**.  
+## Milestone 0 — Foundation  
+Build:  
+```
+repositories
+environment configuration
+database connection
+migrations
+testing setup
+CI basics
+frontend foundation
+backend foundation
+
+```
+Deliverable:  
+Next.js and FastAPI can communicate and both deploy successfully.  
+  
+⸻  
+  
+## 55. Milestone 1 — Product System  
+Build:  
+```
+categories
+products
+images
+variants
+inventory
+
+```
+Admin:  
+```
+Add Product
+Edit Product
+Delete/Archive Product
+View Inventory
+
+```
+Customer:  
+```
+Browse Products
+Product Detail
+
+```
+At the end, your aunt could already use the platform as a **catalogue**.  
+  
+⸻  
+  
+## 56. Milestone 2 — Storefront  
+Build:  
+```
+Home
+Categories
+Search
+Product listing
+Product page
+Responsive mobile layout
+
+```
+Add:  
+```
+shareable product URLs
+OpenGraph previews
+WhatsApp enquiry links
+
+```
+At this point:  
+```
+TikTok → Product Page → WhatsApp
+
+```
+already works.  
+That gives us an early usable product before payment integration.  
+  
+⸻  
+  
+## 57. Milestone 3 — Cart & Delivery  
+Build:  
+```
+Cart
+Quantity adjustment
+Variant selection
+Guest information
+Delivery areas
+Delivery fees
+Checkout total calculation
+
+```
+Server-side price validation is included here.  
+  
+⸻  
+  
+## 58. Milestone 4 — OPay  
+Build:  
+```
+pending orders
+
+OPay transaction initialization
+
+payment redirect
+
+webhook handling
+
+transaction verification
+
+success/failure handling
+
+stock deduction
+
+```
+OPay offers a sandbox/staging environment specifically for development and integration testing, so this stage can be properly tested before live transactions.   
+At this milestone, the fundamental business flow is complete:  
+```
+Discover → Buy → Pay → Order
+
+```
+  
+⸻  
+  
+## 59. Milestone 5 — Orders  
+Admin:  
+```
+New Orders
+
+Paid Orders
+
+Processing
+
+Out for Delivery
+
+Completed
+
+```
+Include:  
+```
+customer information
+products
+variants
+payment status
+delivery information
+WhatsApp customer button
+
+```
+  
+⸻  
+  
+## 60. Milestone 6 — Analytics  
+Introduce:  
+```
+anonymous sessions
+event tracking
+traffic sources
+conversion funnel
+product metrics
+
+```
+Dashboard:  
+```
+Revenue
+Orders
+Visitors
+Product Views
+WhatsApp Clicks
+Conversion
+
+```
+And:  
+```
+Top Products
+Top Sources
+
+```
+  
+⸻  
+  
+## 61. Milestone 7 — Polish  
+Finally:  
+```
+performance
+image optimization
+SEO
+loading states
+error handling
+empty states
+security review
+mobile admin UX
+responsive testing
+payment edge cases
+inventory edge cases
+
+```
+Then production.  
+  
+⸻  
+  
+## 62. Testing Strategy  
+We shouldn’t leave this until the end.  
+Backend unit tests:  
+```
+pricing
+stock
+delivery calculations
+orders
+analytics
+payment verification
+
+```
+Integration tests:  
+```
+checkout
+OPay callback
+order status
+inventory reduction
+
+```
+Critical test:  
+```
+Product price = ₦20,000
+
+Customer modifies frontend request:
+price = ₦1
+
+Backend total must still:
+₦20,000
+
+```
+Another:  
+```
+Stock = 1
+
+Customer requests quantity = 3
+
+Checkout → rejected
+
+```
+And:  
+```
+Fake payment success redirect
+
+Order must remain:
+PENDING_PAYMENT
+
+```
+unless OPay verifies it.  
+  
+⸻  
+  
+## 63. Payment Idempotency  
+This is one detail I want included from the beginning.  
+OPay might theoretically notify us more than once.  
+Our backend must safely handle:  
+```
+Webhook #1
+Payment Success
+
+```
+and:  
+```
+Webhook #2
+Payment Success
+
+```
+without doing:  
+```
+stock -1
+stock -1
+
+```
+twice.  
+So payment processing must be **idempotent**.  
+Something like:  
+```
+if payment.status == SUCCESS:
+    return existing result
+
+```
+before any stock mutation.  
+Important.  
+  
+⸻  
+  
+## 64. Inventory Transaction Safety  
+The eventual transaction should essentially do:  
+```
+BEGIN
+
+verify payment
+
+lock relevant variants
+
+check stock
+
+decrease stock
+
+mark payment success
+
+mark order paid
+
+COMMIT
+
+```
+If something fails:  
+```
+ROLLBACK
+
+```
+This prevents corrupt inventory.  
+  
+⸻  
+  
+## 65. Analytics Should Never Break Purchasing  
+Another architecture rule:  
+Suppose analytics fails.  
+Checkout should still succeed.  
+So:  
+```
+analytics = useful
+commerce = critical
+
+```
+We should never create a design where:  
+```
+Analytics database error
+        ↓
+Payment fails
+
+```
+No.  
+If tracking fails:  
+```
+log failure
+continue checkout
+
+```
+  
+⸻  
+  
+## 66. Important Product Principles  
+I would keep these six rules pinned throughout development:  
+**1. Mobile first**  
+Most customers will arrive from social media on phones.  
+**2. Guest first**  
+Do not force registration.  
+**3. Social first**  
+Every product should be easy to share.  
+**4. Aunt first**  
+If your aunt finds an admin feature confusing, it’s badly designed.  
+**5. Backend authoritative**  
+Price, stock and payment state come from the server.  
+**6. Start small**  
+A reliable simple shop is better than a half-built Shopify clone.  
+  
+⸻  
+  
+## 67. What Success Looks Like  
+For me, the MVP is successful when this exact scenario works:  
+Your aunt photographs a new dress.  
+She opens:  
+```
+Admin → Products → Add
+
+```
+Uploads the photos.  
+Enters:  
+```
+Brown Linen Dress
+₦18,500
+
+S  × 3
+M  × 4
+L  × 5
+
+```
+Presses:  
+```
+Publish
+
+```
+Then:  
+```
+Share → TikTok → Copy Link
+
+```
+She posts a TikTok.  
+A customer clicks the link.  
+Selects:  
+```
+Medium
+
+```
+Clicks:  
+```
+Buy Now
+
+```
+Enters:  
+```
+Name
+Phone
+Address
+Area
+
+```
+Sees:  
+```
+Dress          ₦18,500
+Delivery        ₦2,000
+
+Total          ₦20,500
+
+```
+Pays through OPay.  
+Our webhook verifies:  
+```
+₦20,500 SUCCESS
+
+```
+Database updates:  
+```
+Order → PAID
+
+Medium Stock:
+4 → 3
+
+```
+Your aunt’s dashboard shows:  
+```
+New Order 🎉
+
+Brown Linen Dress
+Medium
+
+₦20,500
+
+Customer...
+
+```
+And Analytics eventually reports:  
+```
+Source:
+TikTok
+
+```
+**That is our target end-to-end vertical slice.**  
+Everything we build should initially serve that flow.  
+  
+⸻  
+  
+## 68. Project Priority Order  
+If we were beginning development now, I’d work in this order:  
+```
+1. Data model
+       ↓
+2. Product management
+       ↓
+3. Product storefront
+       ↓
+4. Product sharing + WhatsApp
+       ↓
+5. Cart
+       ↓
+6. Delivery
+       ↓
+7. Orders
+       ↓
+8. OPay
+       ↓
+9. Analytics
+       ↓
+10. Admin polish
+
+```
+Notice analytics comes fairly late.  
+We should instrument the code so events can be added easily, but **commerce gets working first**.  
+  
+⸻  
+  
+## 69. Working Project Architecture  
+So our current reference architecture is:  
+```
+┌────────────────────────────────────────────────────┐
+│                   FASHION STORE                    │
+└────────────────────────────────────────────────────┘
+
+                    NEXT.JS
+        ┌───────────────────────────┐
+        │                           │
+        │      Public Store         │
+        │                           │
+        │  Home                     │
+        │  Products                 │
+        │  Cart                     │
+        │  Checkout                 │
+        │                           │
+        ├───────────────────────────┤
+        │                           │
+        │      Admin Dashboard      │
+        │                           │
+        │  Products                 │
+        │  Orders                   │
+        │  Analytics                │
+        │  Settings                 │
+        │                           │
+        └─────────────┬─────────────┘
+                      │
+                     REST
+                      │
+                      ▼
+                  FASTAPI
+        ┌──────────────────────────────┐
+        │ Auth                         │
+        │ Products                     │
+        │ Inventory                    │
+        │ Orders                       │
+        │ Checkout                     │
+        │ Delivery                     │
+        │ Payments                     │
+        │ Analytics                    │
+        │ Integrations                 │
+        └──────┬─────────┬─────────┬───┘
+               │         │         │
+               ▼         ▼         ▼
+
+          PostgreSQL  Cloudinary  OPay
+
+```
+That’s a very reasonable system for one developer to build and maintain.  
+  
+⸻  
+  
+## The next technical step  
+I would now move directly into the **database and domain design** before touching frontend code. That’s where we should resolve things like product versus variant, clothing versus shoes, stock behaviour, order snapshots, delivery zones, payment records and analytics sessions.  
+From there, we can produce an actual ER diagram and SQLAlchemy models, followed by the FastAPI endpoint contract. That would give us our **engineering blueprint** rather than just the product plan. 🚀  
+For OPay specifically, we’ll build against their documented API authentication, transaction-status and callback mechanisms and test in their staging environment before switching credentials/endpoints for production.   

@@ -1,0 +1,55 @@
+{
+  "info": {
+    "name": "Bukky Store API",
+    "description": "Contract checks kept in sync with the Bukky Store OpenAPI document.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "System",
+      "item": [
+        {
+          "name": "Liveness",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/health/live",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "health", "live"]
+            },
+            "description": "Confirms that the API process can serve requests."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('returns the strict liveness payload', function () {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body).to.have.all.keys('status', 'service', 'version');",
+                  "  pm.expect(body.status).to.eql('ok');",
+                  "  pm.expect(body.service).to.eql('bukkystore-api');",
+                  "});",
+                  "pm.test('returns correlation and timing headers', function () {",
+                  "  pm.expect(pm.response.headers.get('X-Request-ID')).to.match(/^[0-9a-f-]{36}$/);",
+                  "  pm.expect(pm.response.headers.get('Server-Timing')).to.match(/^app;dur=/);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000",
+      "type": "string"
+    }
+  ]
+}

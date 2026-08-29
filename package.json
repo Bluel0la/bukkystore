@@ -1,0 +1,17 @@
+{
+  "name": "bukkystore",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/web"
+  ],
+  "scripts": {
+    "web:dev": "npm run dev --workspace @bukkystore/web",
+    "web:build": "npm run build --workspace @bukkystore/web",
+    "web:lint": "npm run lint --workspace @bukkystore/web",
+    "web:test": "npm run test --workspace @bukkystore/web"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

@@ -1,0 +1,34 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.postman_environment.json
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.venv/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Logs and generated reports
+*.log
+reports/
+newman/
+postman-cli-reports/
