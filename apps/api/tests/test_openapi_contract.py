@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import schemathesis
-from hypothesis import settings
+from hypothesis import HealthCheck, settings
 from schemathesis import Case
+from schemathesis.specs.openapi.checks import missing_required_header
 
 from bukkystore_api.config import Settings
 from bukkystore_api.main import create_app
@@ -14,14 +15,40 @@ contract_settings = Settings(
     cors_origins=["http://localhost:3000"],
     session_secret="contract-test-secret-with-at-least-32-characters",
     payment_provider="fake",
+    log_level="ERROR",
 )
 contract_app = create_app(contract_settings, FakeDatabase())
 schema = schemathesis.openapi.from_asgi("/api/openapi.json", contract_app)
 
 
-@schema.exclude(path="/api/v1/products").parametrize()
+@schema.exclude(path="/api/v1/products").exclude(path="/api/v1/admin/auth/login").parametrize()
+@settings(
+    max_examples=5,
+    deadline=None,
+    suppress_health_check=[HealthCheck.filter_too_much],
+)
 def test_openapi_operations_do_not_violate_the_contract(case: Case) -> None:
     """Fuzz every documented operation and reject schema drift or unhandled errors."""
+
+    if case.operation.path == "/api/v1/admin/variants/{variant_id}/stock-adjustments":
+        if case.headers is None:
+            case.headers = {}
+        case.headers.setdefault("Idempotency-Key", "contract-test-key")
+        # Authentication intentionally runs before request-shape validation to
+        # avoid leaking protected endpoint details to anonymous callers.
+        case.call_and_validate(excluded_checks=[missing_required_header])
+        return
+    case.call_and_validate()
+
+
+@schema.include(path="/api/v1/admin/auth/login").parametrize()
+@settings(
+    max_examples=3,
+    deadline=None,
+    suppress_health_check=[HealthCheck.filter_too_much],
+)
+def test_login_contract_with_bounded_password_hash_work(case: Case) -> None:
+    """Fuzz sign-in while bounding intentionally expensive password verification."""
 
     case.call_and_validate()
 

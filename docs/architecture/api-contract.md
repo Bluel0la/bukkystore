@@ -93,14 +93,16 @@ processing. It cannot update prices, stock, orders, or payments.
 
 ```text
 POST /admin/auth/login
-POST /admin/auth/refresh
 POST /admin/auth/logout
 GET  /admin/auth/me
 ```
 
-Login and refresh responses set secure HTTP-only cookies. Mutating requests include
-CSRF protection. Login attempts are rate-limited and security logs mask the email
-and network identifiers.
+These routes are implemented. Login creates a database-backed, expiring session and
+sets a secure HTTP-only session cookie plus a SameSite CSRF cookie. Mutating requests
+must bind the CSRF cookie to the `X-CSRF-Token` header. Logout revokes the current
+session. Login attempts are rate-limited and security logs mask email and network
+identifiers. Administrators are created through the trusted bootstrap CLI; there is
+no public signup route.
 
 ## Admin catalogue and inventory
 
@@ -114,15 +116,21 @@ POST   /admin/products
 GET    /admin/products/{product_id}
 PATCH  /admin/products/{product_id}
 POST   /admin/products/{product_id}/archive
-POST   /admin/products/{product_id}/images/signature
 
 POST   /admin/variants/{variant_id}/stock-adjustments
-GET    /admin/inventory/low-stock
 ```
 
-Stock adjustments accept a signed delta or a target quantity, a required reason,
-and an idempotency key. They never accept a replacement product object as a raw
-dictionary.
+These routes are implemented. Admin product responses expose exact on-hand,
+reserved, and available quantities. Product creation requires one or more unique
+colour-and-size variants. Archiving uses its dedicated action and archives the
+variants atomically; ordinary updates cannot set `ARCHIVED` directly.
+
+Stock adjustments accept a bounded signed delta, a required reason, and an
+`Idempotency-Key`. They enforce the reserved-stock floor, record the acting user,
+and return an idempotent replay for an identical retry. They never accept a
+replacement product object as a raw dictionary.
+
+Image signing and low-stock reporting remain planned follow-on routes.
 
 Cloudinary uploads use narrowly scoped signed parameters. The API verifies the
 completed upload before persisting image metadata.

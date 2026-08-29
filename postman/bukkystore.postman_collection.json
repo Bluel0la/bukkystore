@@ -101,6 +101,78 @@
           ] } }]
         }
       ]
+    },
+    {
+      "name": "Admin",
+      "description": "Cookie-authenticated catalogue operations. Login captures the CSRF cookie for mutating requests.",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{admin_password}}\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/v1/admin/auth/login", "host": ["{{base_url}}"], "path": ["api", "v1", "admin", "auth", "login"] },
+            "description": "Creates an expiring server-side admin session. Credentials are injected as secret environment values."
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
+            "pm.test('returns the authenticated user', function () { pm.expect(pm.response.json().user).to.have.all.keys('id', 'email', 'display_name', 'role'); });",
+            "const cookies = pm.response.headers.all().filter(header => header.key.toLowerCase() === 'set-cookie').map(header => header.value).join(';');",
+            "const csrf = cookies.match(/bukky_admin_csrf=([^;]+)/);",
+            "if (csrf) { pm.collectionVariables.set('csrf_token', decodeURIComponent(csrf[1])); }"
+          ] } }]
+        },
+        {
+          "name": "Current admin",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/v1/admin/auth/me", "host": ["{{base_url}}"], "path": ["api", "v1", "admin", "auth", "me"] },
+            "description": "Resolves the current active admin session."
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "List admin categories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/v1/admin/categories", "host": ["{{base_url}}"], "path": ["api", "v1", "admin", "categories"] },
+            "description": "Returns active and inactive categories for management. POST and PATCH use the same resource with the CSRF header."
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
+            "pm.test('returns categories', function () { pm.expect(pm.response.json()).to.be.an('array').that.is.not.empty; });"
+          ] } }]
+        },
+        {
+          "name": "List admin products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/v1/admin/products?limit=10", "host": ["{{base_url}}"], "path": ["api", "v1", "admin", "products"], "query": [{ "key": "limit", "value": "10" }] },
+            "description": "Returns exact stock and reservation counts for catalogue management. POST creates a product; GET/PATCH by UUID edit it; the archive action performs archival."
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
+            "pm.test('returns exact inventory', function () { const body = pm.response.json(); pm.expect(body.items).to.be.an('array').that.is.not.empty; pm.expect(body.items[0].variants[0]).to.have.property('stock_on_hand'); });"
+          ] } }]
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "X-CSRF-Token", "value": "{{csrf_token}}" }],
+            "url": { "raw": "{{base_url}}/api/v1/admin/auth/logout", "host": ["{{base_url}}"], "path": ["api", "v1", "admin", "auth", "logout"] },
+            "description": "Revokes the current session and clears both cookies."
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('returns HTTP 204', function () { pm.response.to.have.status(204); });"] } }]
+        }
+      ]
     }
   ],
   "variable": [
@@ -108,6 +180,11 @@
       "key": "base_url",
       "value": "http://127.0.0.1:8000",
       "type": "string"
+    },
+    {
+      "key": "csrf_token",
+      "value": "",
+      "type": "secret"
     }
   ]
 }

@@ -37,3 +37,10 @@ def test_unrelated_process_configuration_is_ignored() -> None:
     settings = production_settings(unrelated_service_secret="must-not-be-reflected")
 
     assert not hasattr(settings, "unrelated_service_secret")
+
+
+@pytest.mark.parametrize("scheme", ["postgresql://", "postgres://"])
+def test_provider_database_urls_use_the_async_driver(scheme: str) -> None:
+    settings = production_settings(database_url=f"{scheme}test:test@localhost:5432/test")
+
+    assert str(settings.database_url).startswith("postgresql+asyncpg://")

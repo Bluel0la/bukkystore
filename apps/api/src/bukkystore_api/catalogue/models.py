@@ -23,6 +23,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from bukkystore_api.auth.models import AdminUser
 from bukkystore_api.database import Base
 
 if TYPE_CHECKING:
@@ -114,7 +115,9 @@ class Product(TimestampMixin, Base):
     description: Mapped[str] = mapped_column(Text, nullable=False, server_default=text("''"))
     base_price_minor: Mapped[int] = mapped_column(BigInteger, nullable=False)
     compare_at_price_minor: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
-    currency: Mapped[str] = mapped_column(String(3), nullable=False, server_default=text("'NGN'"))
+    currency: Mapped[str] = mapped_column(
+        String(3), nullable=False, default="NGN", server_default=text("'NGN'")
+    )
     status: Mapped[ProductStatus] = mapped_column(
         Enum(ProductStatus, name="product_status", native_enum=True),
         nullable=False,
@@ -251,9 +254,12 @@ class InventoryMovement(Base):
     idempotency_key: Mapped[str] = mapped_column(String(120), nullable=False)
     order_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
     reservation_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
-    actor_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    actor_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
     variant: Mapped[ProductVariant] = relationship(back_populates="movements")
+    actor: Mapped[AdminUser | None] = relationship()

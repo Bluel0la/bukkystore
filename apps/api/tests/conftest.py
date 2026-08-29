@@ -24,8 +24,17 @@ class EmptyScalarResult:
 
 
 class EmptySession:
+    async def scalar(self, _statement: object) -> None:
+        return None
+
     async def scalars(self, _statement: object) -> EmptyScalarResult:
         return EmptyScalarResult()
+
+    def add(self, _value: object) -> None:
+        return None
+
+    async def commit(self) -> None:
+        return None
 
 
 class FakeDatabase:

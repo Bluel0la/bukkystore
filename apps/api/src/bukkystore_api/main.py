@@ -8,8 +8,11 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from bukkystore_api.admin_catalogue.router import router as admin_catalogue_router
 from bukkystore_api.api import router
+from bukkystore_api.auth.router import router as auth_router
 from bukkystore_api.catalogue.router import router as catalogue_router
 from bukkystore_api.config import Settings, get_settings
 from bukkystore_api.database import Database, DatabaseProtocol
@@ -29,6 +32,7 @@ def create_app(
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        app.state.settings = resolved_settings
         app.state.database = database or Database(str(resolved_settings.database_url))
         logger.info("application_started", extra={"environment": resolved_settings.environment})
         try:
@@ -56,6 +60,8 @@ def create_app(
     app.add_middleware(RequestContextMiddleware)
     app.include_router(router)
     app.include_router(catalogue_router)
+    app.include_router(auth_router)
+    app.include_router(admin_catalogue_router)
 
     @app.exception_handler(ApiError)
     async def api_error_handler(_request: Request, exc: ApiError) -> JSONResponse:
@@ -84,6 +90,23 @@ def create_app(
                 "correlation_id": correlation_id_context.get() or "unknown",
                 "details": safe_errors,
             },
+        )
+
+    @app.exception_handler(StarletteHTTPException)
+    async def http_error_handler(_request: Request, exc: StarletteHTTPException) -> JSONResponse:
+        messages = {
+            400: "The request body could not be parsed.",
+            404: "The requested resource was not found.",
+            405: "The request method is not allowed.",
+        }
+        return JSONResponse(
+            status_code=exc.status_code,
+            content=ErrorResponse(
+                code=f"http_{exc.status_code}",
+                message=messages.get(exc.status_code, "The request could not be completed."),
+                correlation_id=correlation_id_context.get() or "unknown",
+            ).model_dump(),
+            headers=exc.headers,
         )
 
     @app.exception_handler(Exception)

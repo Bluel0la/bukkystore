@@ -5,9 +5,9 @@ small Lagos retailer. It is designed around guest checkout, social-media product
 links, WhatsApp enquiries, simple administration, variant-level inventory, and
 provider-verified payments.
 
-The project has its Release 0 foundation and first catalogue slice. Public category,
-product-list, and product-detail routes are backed by PostgreSQL and rendered by the
-Next.js storefront. Checkout and authenticated catalogue management are next.
+The project has its Release 0 foundation, public catalogue, and authenticated
+catalogue-management slices. Public browsing and the owner/admin product dashboard
+are backed by PostgreSQL. Checkout is the next delivery slice.
 
 ## Agreed product boundaries
 
@@ -59,6 +59,7 @@ Prerequisites are Python 3.12+, `uv`, Node.js 22+, npm, Docker, and Postman CLI.
    uv sync --project apps/api
    uv run --project apps/api alembic -c apps/api/alembic.ini upgrade head
    uv run --project apps/api python -m bukkystore_api.seed
+   uv run --project apps/api python -m bukkystore_api.auth.bootstrap --email owner@example.com --display-name "Store Owner" --role OWNER
    uv run --project apps/api uvicorn --factory bukkystore_api.main:create_app --app-dir apps/api/src --reload
    ```
 
@@ -67,6 +68,11 @@ Prerequisites are Python 3.12+, `uv`, Node.js 22+, npm, Docker, and Postman CLI.
 The storefront is available at `http://localhost:3000`, API documentation at
 `http://localhost:8000/api/docs`, and liveness at
 `http://localhost:8000/api/v1/health/live`.
+
+The bootstrap command prompts for a password without echoing it. The first
+administrator must be an `OWNER`; subsequent `OWNER` or `ADMIN` accounts can be
+bootstrapped only from this trusted local command. There is no public admin signup.
+The dashboard is available at `http://localhost:3000/admin/login`.
 
 The development seed is idempotent and creates representative dresses, shoes, and
 bags with colour-and-size stock variants. Product photography remains intentionally
