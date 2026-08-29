@@ -43,6 +43,64 @@
           ]
         }
       ]
+    },
+    {
+      "name": "Catalogue",
+      "item": [
+        {
+          "name": "List categories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/v1/categories", "host": ["{{base_url}}"], "path": ["api", "v1", "categories"] },
+            "description": "Returns active store categories in display order."
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
+            "pm.test('returns seeded categories', function () {",
+            "  const body = pm.response.json();",
+            "  pm.expect(body).to.be.an('array').that.is.not.empty;",
+            "  pm.expect(body.map(item => item.slug)).to.include('dresses');",
+            "});"
+          ] } }]
+        },
+        {
+          "name": "Browse products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/v1/products?limit=10", "host": ["{{base_url}}"], "path": ["api", "v1", "products"], "query": [{ "key": "limit", "value": "10" }] },
+            "description": "Returns cursor-paginated active products with derived availability."
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
+            "pm.test('does not expose exact stock', function () {",
+            "  const body = pm.response.json();",
+            "  pm.expect(body).to.have.all.keys('items', 'next_cursor');",
+            "  pm.expect(body.items.map(item => item.slug)).to.include('brown-linen-dress');",
+            "  pm.expect(body.items[0]).not.to.have.property('stock_on_hand');",
+            "});"
+          ] } }]
+        },
+        {
+          "name": "Get product detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/v1/products/brown-linen-dress", "host": ["{{base_url}}"], "path": ["api", "v1", "products", "brown-linen-dress"] },
+            "description": "Returns selectable colour-and-size variants for one active product."
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
+            "pm.test('returns variant availability', function () {",
+            "  const body = pm.response.json();",
+            "  pm.expect(body.slug).to.eql('brown-linen-dress');",
+            "  pm.expect(body.variants).to.be.an('array').that.is.not.empty;",
+            "  pm.expect(body.variants[0]).to.have.property('available');",
+            "});"
+          ] } }]
+        }
+      ]
     }
   ],
   "variable": [

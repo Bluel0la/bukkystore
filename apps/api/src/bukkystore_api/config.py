@@ -13,7 +13,10 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
         env_prefix="APP_",
-        extra="forbid",
+        # A repository-level dotenv also serves Docker and Next.js. Ignore keys
+        # outside this typed APP_ namespace instead of reflecting their values in
+        # a startup validation error.
+        extra="ignore",
         case_sensitive=False,
     )
 

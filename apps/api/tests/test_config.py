@@ -31,3 +31,9 @@ def test_production_requires_explicit_cors_origin() -> None:
 def test_reservation_duration_has_safe_bounds() -> None:
     with pytest.raises(ValidationError):
         production_settings(reservation_minutes=2)
+
+
+def test_unrelated_process_configuration_is_ignored() -> None:
+    settings = production_settings(unrelated_service_secret="must-not-be-reflected")
+
+    assert not hasattr(settings, "unrelated_service_secret")

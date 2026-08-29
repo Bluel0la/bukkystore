@@ -5,8 +5,9 @@ small Lagos retailer. It is designed around guest checkout, social-media product
 links, WhatsApp enquiries, simple administration, variant-level inventory, and
 provider-verified payments.
 
-The project is in Release 0. The FastAPI and Next.js foundations are scaffolded;
-catalogue and commerce features have not yet been implemented.
+The project has its Release 0 foundation and first catalogue slice. Public category,
+product-list, and product-detail routes are backed by PostgreSQL and rendered by the
+Next.js storefront. Checkout and authenticated catalogue management are next.
 
 ## Agreed product boundaries
 
@@ -57,6 +58,7 @@ Prerequisites are Python 3.12+, `uv`, Node.js 22+, npm, Docker, and Postman CLI.
    ```text
    uv sync --project apps/api
    uv run --project apps/api alembic -c apps/api/alembic.ini upgrade head
+   uv run --project apps/api python -m bukkystore_api.seed
    uv run --project apps/api uvicorn --factory bukkystore_api.main:create_app --app-dir apps/api/src --reload
    ```
 
@@ -65,6 +67,10 @@ Prerequisites are Python 3.12+, `uv`, Node.js 22+, npm, Docker, and Postman CLI.
 The storefront is available at `http://localhost:3000`, API documentation at
 `http://localhost:8000/api/docs`, and liveness at
 `http://localhost:8000/api/v1/health/live`.
+
+The development seed is idempotent and creates representative dresses, shoes, and
+bags with colour-and-size stock variants. Product photography remains intentionally
+empty until real store photos are supplied.
 
 Run the quality gates with:
 

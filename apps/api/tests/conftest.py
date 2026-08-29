@@ -1,13 +1,31 @@
 from __future__ import annotations
 
 from collections.abc import AsyncIterator, Iterator
+from typing import Any, cast
 
 import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from bukkystore_api.config import Settings
 from bukkystore_api.main import create_app
+
+
+class EmptyScalarResult:
+    def all(self) -> list[Any]:
+        return []
+
+    def unique(self) -> EmptyScalarResult:
+        return self
+
+    def one_or_none(self) -> None:
+        return None
+
+
+class EmptySession:
+    async def scalars(self, _statement: object) -> EmptyScalarResult:
+        return EmptyScalarResult()
 
 
 class FakeDatabase:
@@ -19,6 +37,9 @@ class FakeDatabase:
         if not self.ready:
             raise OSError("database unavailable")
         return True
+
+    async def session(self) -> AsyncIterator[AsyncSession]:
+        yield cast(AsyncSession, EmptySession())
 
     async def dispose(self) -> None:
         self.disposed = True

@@ -22,7 +22,6 @@ dictionary parsing is not permitted at API or provider boundaries.
 ## Public catalogue
 
 ```text
-GET  /store
 GET  /categories
 GET  /products
 GET  /products/{slug}
@@ -32,7 +31,11 @@ GET  /delivery-areas
 Product responses expose availability, not internal reservation records or exact
 stock counts unless the UI explicitly needs a bounded "few left" indicator.
 Filtering initially supports category, search text, availability, size, and a
-bounded price range.
+bounded price range. The catalogue implementation returns prices in integer kobo,
+uses opaque cursor pagination, derives availability from `stock_on_hand -
+reserved_quantity`, and never exposes either stock field publicly. Product detail
+responses include variant SKU, colour, size, display name, effective price,
+availability, and a bounded low-stock indicator.
 
 ## Checkout and payment status
 

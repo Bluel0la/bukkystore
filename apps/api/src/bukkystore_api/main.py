@@ -10,8 +10,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from bukkystore_api.api import router
+from bukkystore_api.catalogue.router import router as catalogue_router
 from bukkystore_api.config import Settings, get_settings
 from bukkystore_api.database import Database, DatabaseProtocol
+from bukkystore_api.errors import ApiError
 from bukkystore_api.logging import configure_logging, correlation_id_context
 from bukkystore_api.middleware import RequestContextMiddleware
 from bukkystore_api.schemas import ErrorResponse
@@ -53,6 +55,18 @@ def create_app(
     )
     app.add_middleware(RequestContextMiddleware)
     app.include_router(router)
+    app.include_router(catalogue_router)
+
+    @app.exception_handler(ApiError)
+    async def api_error_handler(_request: Request, exc: ApiError) -> JSONResponse:
+        return JSONResponse(
+            status_code=exc.status_code,
+            content=ErrorResponse(
+                code=exc.code,
+                message=exc.message,
+                correlation_id=correlation_id_context.get() or "unknown",
+            ).model_dump(),
+        )
 
     @app.exception_handler(RequestValidationError)
     async def validation_error_handler(
