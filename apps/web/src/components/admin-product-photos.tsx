@@ -90,7 +90,16 @@ export function AdminProductPhotos({
         const registerResponse = await fetch(`/api/admin/products/${productId}/images`, {
           method: "POST",
           headers: { "content-type": "application/json", "X-CSRF-Token": csrf },
-          body: JSON.stringify({ ...cloudinary, alt_text: `${productName} product photo` }),
+          body: JSON.stringify({
+            public_id: cloudinary.public_id,
+            version: cloudinary.version,
+            signature: cloudinary.signature,
+            width: cloudinary.width,
+            height: cloudinary.height,
+            bytes: cloudinary.bytes,
+            format: cloudinary.format,
+            alt_text: `${productName} product photo`,
+          }),
         });
         if (!registerResponse.ok) throw new Error(await errorMessage(registerResponse, "The uploaded photo could not be saved."));
         uploaded.push(await registerResponse.json() as AdminProductImage);

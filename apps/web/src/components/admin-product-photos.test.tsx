@@ -15,7 +15,11 @@ const photos: AdminProductImage[] = [
 class SuccessfulXhr {
   status = 200;
   responseType = "";
-  response = { public_id: "public-new", version: 2, signature: "a".repeat(64), width: 1200, height: 1500, bytes: 500, format: "jpg" };
+  response = {
+    public_id: "public-new", version: 2, signature: "a".repeat(64), width: 1200,
+    height: 1500, bytes: 500, format: "jpg", asset_id: "must-not-reach-api",
+    secure_url: "https://res.cloudinary.com/provider-response.jpg",
+  };
   private listeners = new Map<string, () => void>();
   private progress?: (event: { lengthComputable: boolean; loaded: number; total: number }) => void;
   upload = { addEventListener: (_name: string, listener: typeof this.progress) => { this.progress = listener; } };
@@ -65,6 +69,9 @@ describe("AdminProductPhotos", () => {
     expect(fetchMock.mock.calls[0][0]).toContain("/images/signatures");
     const registeredBody = JSON.parse(fetchMock.mock.calls[1][1].body as string);
     expect(registeredBody.alt_text).toBe("Brown Dress product photo");
+    expect(Object.keys(registeredBody).sort()).toEqual([
+      "alt_text", "bytes", "format", "height", "public_id", "signature", "version", "width",
+    ]);
   });
 
   it("edits descriptions, reorders photos, and confirms deletion", async () => {
