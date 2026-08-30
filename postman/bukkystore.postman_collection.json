@@ -282,6 +282,99 @@
           ] } }]
         },
         {
+          "name": "Create product photo upload signature",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "X-CSRF-Token", "value": "{{csrf_token}}" }],
+            "url": { "raw": "{{base_url}}/api/v1/admin/products/{{admin_product_id}}/images/signatures", "host": ["{{base_url}}"], "path": ["api", "v1", "admin", "products", "{{admin_product_id}}", "images", "signatures"] },
+            "description": "Creates a short-lived, product-scoped signed direct-upload request without returning the Cloudinary API secret. Disabled by default."
+          },
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+              "if (String(pm.environment.get('run_photography_write')).toLowerCase() !== 'true' || !pm.environment.get('admin_product_id')) { pm.execution.skipRequest(); }"
+            ] } },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('does not expose the API secret', function () { const body = pm.response.json(); pm.expect(body).to.have.property('signature_algorithm', 'sha256'); pm.expect(body).not.to.have.property('api_secret'); });"
+            ] } }
+          ]
+        },
+        {
+          "name": "Register completed product photo upload",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"public_id\": \"{{cloudinary_public_id}}\",\n  \"version\": {{cloudinary_version}},\n  \"signature\": \"{{cloudinary_response_signature}}\",\n  \"width\": 1200,\n  \"height\": 1500,\n  \"bytes\": 500000,\n  \"format\": \"jpg\",\n  \"alt_text\": \"Product front view\"\n}" },
+            "url": { "raw": "{{base_url}}/api/v1/admin/products/{{admin_product_id}}/images", "host": ["{{base_url}}"], "path": ["api", "v1", "admin", "products", "{{admin_product_id}}", "images"] },
+            "description": "Verifies Cloudinary's response signature and registers trusted photo metadata. Supply values from a completed direct upload. Disabled by default."
+          },
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+              "if (String(pm.environment.get('run_photography_write')).toLowerCase() !== 'true' || !pm.environment.get('cloudinary_response_signature')) { pm.execution.skipRequest(); }"
+            ] } },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('returns HTTP 201', function () { pm.response.to.have.status(201); });",
+              "pm.test('returns trusted metadata', function () { const body = pm.response.json(); pm.expect(body.url.startsWith('https://res.cloudinary.com/')).to.eql(true); pm.environment.set('admin_product_image_id', body.id); });"
+            ] } }
+          ]
+        },
+        {
+          "name": "Update product photo description",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"alt_text\": \"Product front view\"\n}" },
+            "url": { "raw": "{{base_url}}/api/v1/admin/products/{{admin_product_id}}/images/{{admin_product_image_id}}/alt-text", "host": ["{{base_url}}"], "path": ["api", "v1", "admin", "products", "{{admin_product_id}}", "images", "{{admin_product_image_id}}", "alt-text"] },
+            "description": "Updates the customer-facing accessible description for one product photo. Disabled by default."
+          },
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+              "if (String(pm.environment.get('run_photography_write')).toLowerCase() !== 'true' || !pm.environment.get('admin_product_image_id')) { pm.execution.skipRequest(); }"
+            ] } },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });"] } }
+          ]
+        },
+        {
+          "name": "Reorder product photos",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"image_ids\": [\"{{admin_product_image_id}}\"]\n}" },
+            "url": { "raw": "{{base_url}}/api/v1/admin/products/{{admin_product_id}}/images/reorder", "host": ["{{base_url}}"], "path": ["api", "v1", "admin", "products", "{{admin_product_id}}", "images", "reorder"] },
+            "description": "Replaces the complete display order. This one-photo contract example is disabled by default."
+          },
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+              "if (String(pm.environment.get('run_photography_write')).toLowerCase() !== 'true' || !pm.environment.get('admin_product_image_id')) { pm.execution.skipRequest(); }"
+            ] } },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });"] } }
+          ]
+        },
+        {
+          "name": "Remove product photo",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "X-CSRF-Token", "value": "{{csrf_token}}" }],
+            "url": { "raw": "{{base_url}}/api/v1/admin/products/{{admin_product_id}}/images/{{admin_product_image_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "admin", "products", "{{admin_product_id}}", "images", "{{admin_product_image_id}}"] },
+            "description": "Removes the provider asset before deleting catalogue metadata. Disabled by default because it is destructive."
+          },
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+              "if (String(pm.environment.get('run_photography_write')).toLowerCase() !== 'true' || !pm.environment.get('admin_product_image_id')) { pm.execution.skipRequest(); }"
+            ] } },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });"] } }
+          ]
+        },
+        {
           "name": "List admin orders",
           "request": {
             "method": "GET",

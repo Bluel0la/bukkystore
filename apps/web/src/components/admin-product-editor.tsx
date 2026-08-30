@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
 import { readCsrfCookie } from "@/lib/admin-client";
+import { AdminProductPhotos } from "@/components/admin-product-photos";
 import type { AdminProduct, AdminVariant } from "@/lib/admin-types";
 import type { Category } from "@/lib/catalogue";
 
@@ -71,6 +72,7 @@ export function AdminProductEditor({ product, categories }: { product: AdminProd
 
   return (
     <div className="grid gap-8">
+      <AdminProductPhotos initialImages={product.images} productId={product.id} productName={product.name} />
       <form className="grid gap-5 rounded-3xl border border-[var(--line)] bg-white p-5 sm:p-7" onSubmit={save}>
         <div className="grid gap-5 sm:grid-cols-2"><label className="grid gap-2 text-sm">Name<input className="admin-input" defaultValue={product.name} name="name" required /></label><label className="grid gap-2 text-sm">Slug<input className="admin-input" defaultValue={product.slug} name="slug" required /></label><label className="grid gap-2 text-sm">Category<select className="admin-input" defaultValue={product.category.id} name="categoryId">{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label><label className="grid gap-2 text-sm">Price (₦)<input className="admin-input" defaultValue={product.base_price_minor / 100} min="0" name="price" step="0.01" type="number" /></label><label className="grid gap-2 text-sm">Visibility<select className="admin-input" defaultValue={product.status} name="status"><option value="DRAFT">Draft</option><option value="ACTIVE">Published</option></select></label></div>
         <label className="grid gap-2 text-sm">Description<textarea className="admin-input min-h-28" defaultValue={product.description} name="description" /></label><label className="flex gap-3 text-sm"><input defaultChecked={product.featured} name="featured" type="checkbox" /> Feature on storefront</label>

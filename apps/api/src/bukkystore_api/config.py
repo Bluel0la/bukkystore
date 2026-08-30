@@ -26,6 +26,11 @@ class Settings(BaseSettings):
     public_site_url: AnyHttpUrl = Field(default_factory=lambda: AnyHttpUrl("http://localhost:3000"))
     session_secret: SecretStr = Field(min_length=32)
     payment_provider: Literal["fake", "opay"] = "fake"
+    cloudinary_cloud_name: str | None = Field(
+        default=None, min_length=1, max_length=120, pattern=r"^[A-Za-z0-9_-]+$"
+    )
+    cloudinary_api_key: SecretStr | None = Field(default=None, min_length=1, max_length=255)
+    cloudinary_api_secret: SecretStr | None = Field(default=None, min_length=8, max_length=255)
     reservation_minutes: int = Field(default=15, ge=5, le=30)
     admin_session_hours: int = Field(default=12, ge=1, le=168)
     admin_login_window_minutes: int = Field(default=15, ge=5, le=60)
@@ -44,10 +49,21 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def enforce_production_safety(self) -> Self:
+        cloudinary_values = (
+            self.cloudinary_cloud_name,
+            self.cloudinary_api_key,
+            self.cloudinary_api_secret,
+        )
+        if any(cloudinary_values) and not all(cloudinary_values):
+            raise ValueError(
+                "Cloudinary configuration must include cloud name, API key, and secret"
+            )
         if self.environment == "production" and self.payment_provider == "fake":
             raise ValueError("The fake payment provider is forbidden in production")
         if self.environment == "production" and not self.cors_origins:
             raise ValueError("At least one explicit CORS origin is required in production")
+        if self.environment == "production" and not all(cloudinary_values):
+            raise ValueError("Cloudinary configuration is required in production")
         return self
 
 

@@ -25,6 +25,7 @@ const product: AdminProduct = {
     price_override_minor: null, stock_on_hand: 4, reserved_quantity: 1, available_quantity: 3,
     low_stock_threshold: 2, status: "ACTIVE",
   }],
+  images: [],
 };
 const categories = [product.category];
 

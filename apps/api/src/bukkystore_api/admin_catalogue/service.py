@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import base64
 import json
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from sqlalchemy import select
@@ -10,15 +10,27 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 
+from bukkystore_api.admin_catalogue.cloudinary import (
+    delivery_url,
+    destroy_image,
+    require_cloudinary,
+    sign_parameters,
+    verify_upload_response,
+)
 from bukkystore_api.admin_catalogue.schemas import (
     AdminCategoryCreate,
     AdminCategoryUpdate,
     AdminProductCreate,
+    AdminProductImageResponse,
     AdminProductListQuery,
     AdminProductPage,
     AdminProductResponse,
     AdminProductUpdate,
     AdminVariantResponse,
+    ImageUploadSignatureResponse,
+    ProductImageRegisterRequest,
+    ProductImageReorderRequest,
+    ProductImageUpdateRequest,
     StockAdjustmentRequest,
     StockAdjustmentResponse,
 )
@@ -27,11 +39,13 @@ from bukkystore_api.catalogue.models import (
     InventoryMovement,
     InventoryMovementType,
     Product,
+    ProductImage,
     ProductStatus,
     ProductVariant,
     VariantStatus,
 )
 from bukkystore_api.catalogue.schemas import CategoryResponse
+from bukkystore_api.config import Settings
 from bukkystore_api.errors import ApiError
 
 
@@ -60,6 +74,18 @@ def _variant_response(variant: ProductVariant) -> AdminVariantResponse:
     )
 
 
+def _image_response(image: ProductImage) -> AdminProductImageResponse:
+    return AdminProductImageResponse(
+        id=image.id,
+        public_id=image.cloudinary_public_id,
+        url=image.secure_url,
+        alt_text=image.alt_text,
+        width=image.width,
+        height=image.height,
+        position=image.position,
+    )
+
+
 def _product_response(product: Product) -> AdminProductResponse:
     return AdminProductResponse(
         id=product.id,
@@ -73,6 +99,7 @@ def _product_response(product: Product) -> AdminProductResponse:
         status=product.status,
         featured=product.featured,
         variants=[_variant_response(variant) for variant in product.variants],
+        images=[_image_response(image) for image in product.images],
         created_at=product.created_at,
         updated_at=product.updated_at,
     )
@@ -136,7 +163,7 @@ async def list_admin_products(
     session: AsyncSession, filters: AdminProductListQuery
 ) -> AdminProductPage:
     statement = select(Product).options(
-        joinedload(Product.category), selectinload(Product.variants)
+        joinedload(Product.category), selectinload(Product.variants), selectinload(Product.images)
     )
     if filters.search:
         escaped = filters.search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
@@ -168,7 +195,11 @@ async def get_admin_product(session: AsyncSession, product_id: UUID) -> AdminPro
             await session.scalars(
                 select(Product)
                 .where(Product.id == product_id)
-                .options(joinedload(Product.category), selectinload(Product.variants))
+                .options(
+                    joinedload(Product.category),
+                    selectinload(Product.variants),
+                    selectinload(Product.images),
+                )
             )
         )
         .unique()
@@ -240,7 +271,11 @@ async def update_product(
             await session.scalars(
                 select(Product)
                 .where(Product.id == product_id)
-                .options(joinedload(Product.category), selectinload(Product.variants))
+                .options(
+                    joinedload(Product.category),
+                    selectinload(Product.variants),
+                    selectinload(Product.images),
+                )
             )
         )
         .unique()
@@ -276,7 +311,11 @@ async def archive_product(session: AsyncSession, product_id: UUID) -> AdminProdu
                 select(Product)
                 .where(Product.id == product_id)
                 .with_for_update()
-                .options(joinedload(Product.category), selectinload(Product.variants))
+                .options(
+                    joinedload(Product.category),
+                    selectinload(Product.variants),
+                    selectinload(Product.images),
+                )
             )
         )
         .unique()
@@ -345,3 +384,179 @@ async def adjust_stock(
             409, "idempotency_conflict", "The idempotency key was already used."
         ) from exc
     return StockAdjustmentResponse(variant=_variant_response(variant), idempotent_replay=False)
+
+
+async def create_image_upload_signature(
+    session: AsyncSession, product_id: UUID, settings: Settings
+) -> ImageUploadSignatureResponse:
+    product_exists = await session.scalar(select(Product.id).where(Product.id == product_id))
+    if product_exists is None:
+        raise ApiError(404, "product_not_found", "The product was not found.")
+    cloud_name, api_key, api_secret = require_cloudinary(settings)
+    timestamp = int(datetime.now(UTC).timestamp())
+    public_id = f"bukkystore/products/{product_id}/{uuid4()}"
+    parameters: dict[str, str | int] = {
+        "overwrite": "false",
+        "public_id": public_id,
+        "timestamp": timestamp,
+    }
+    return ImageUploadSignatureResponse(
+        upload_url=f"https://api.cloudinary.com/v1_1/{cloud_name}/image/upload",
+        cloud_name=cloud_name,
+        api_key=api_key,
+        timestamp=timestamp,
+        public_id=public_id,
+        signature=sign_parameters(parameters, api_secret),
+        max_bytes=10_000_000,
+        allowed_mime_types=["image/jpeg", "image/png", "image/webp", "image/avif"],
+    )
+
+
+async def register_product_image(
+    session: AsyncSession,
+    product_id: UUID,
+    payload: ProductImageRegisterRequest,
+    settings: Settings,
+) -> AdminProductImageResponse:
+    cloud_name, _api_key, api_secret = require_cloudinary(settings)
+    expected_prefix = f"bukkystore/products/{product_id}/"
+    if not payload.public_id.startswith(expected_prefix):
+        raise ApiError(
+            400, "invalid_image_upload", "The uploaded photo does not match this product."
+        )
+    if not verify_upload_response(
+        public_id=payload.public_id,
+        version=payload.version,
+        signature=payload.signature,
+        api_secret=api_secret,
+    ):
+        raise ApiError(400, "invalid_image_upload", "The image provider response is invalid.")
+    product = (
+        (
+            await session.scalars(
+                select(Product)
+                .where(Product.id == product_id)
+                .with_for_update()
+                .options(selectinload(Product.images))
+            )
+        )
+        .unique()
+        .one_or_none()
+    )
+    if product is None:
+        raise ApiError(404, "product_not_found", "The product was not found.")
+    existing = next(
+        (image for image in product.images if image.cloudinary_public_id == payload.public_id), None
+    )
+    if existing is not None:
+        return _image_response(existing)
+    if len(product.images) >= 10:
+        raise ApiError(409, "image_limit_reached", "A product can have at most 10 photos.")
+    image = ProductImage(
+        product=product,
+        cloudinary_public_id=payload.public_id,
+        secure_url=delivery_url(
+            cloud_name=cloud_name,
+            public_id=payload.public_id,
+            version=payload.version,
+            image_format=payload.format,
+        ),
+        alt_text=payload.alt_text,
+        width=payload.width,
+        height=payload.height,
+        position=len(product.images),
+    )
+    session.add(image)
+    try:
+        await session.commit()
+    except IntegrityError as exc:
+        await session.rollback()
+        raise ApiError(409, "image_conflict", "This photo has already been registered.") from exc
+    return _image_response(image)
+
+
+async def update_product_image(
+    session: AsyncSession,
+    product_id: UUID,
+    image_id: UUID,
+    payload: ProductImageUpdateRequest,
+) -> AdminProductImageResponse:
+    image = await session.scalar(
+        select(ProductImage).where(
+            ProductImage.id == image_id, ProductImage.product_id == product_id
+        )
+    )
+    if image is None:
+        raise ApiError(404, "image_not_found", "The product photo was not found.")
+    image.alt_text = payload.alt_text
+    await session.commit()
+    return _image_response(image)
+
+
+async def reorder_product_images(
+    session: AsyncSession,
+    product_id: UUID,
+    payload: ProductImageReorderRequest,
+) -> list[AdminProductImageResponse]:
+    product = (
+        (
+            await session.scalars(
+                select(Product)
+                .where(Product.id == product_id)
+                .with_for_update()
+                .options(selectinload(Product.images))
+            )
+        )
+        .unique()
+        .one_or_none()
+    )
+    if product is None:
+        raise ApiError(404, "product_not_found", "The product was not found.")
+    images_by_id = {image.id: image for image in product.images}
+    if set(payload.image_ids) != set(images_by_id):
+        raise ApiError(400, "invalid_image_order", "The order must include every product photo.")
+    for offset, image_id in enumerate(payload.image_ids, start=1_000_000):
+        images_by_id[image_id].position = offset
+    await session.flush()
+    ordered = []
+    for position, image_id in enumerate(payload.image_ids):
+        image = images_by_id[image_id]
+        image.position = position
+        ordered.append(image)
+    await session.commit()
+    return [_image_response(image) for image in ordered]
+
+
+async def remove_product_image(
+    session: AsyncSession,
+    product_id: UUID,
+    image_id: UUID,
+    settings: Settings,
+) -> list[AdminProductImageResponse]:
+    product = (
+        (
+            await session.scalars(
+                select(Product)
+                .where(Product.id == product_id)
+                .with_for_update()
+                .options(selectinload(Product.images))
+            )
+        )
+        .unique()
+        .one_or_none()
+    )
+    if product is None:
+        raise ApiError(404, "product_not_found", "The product was not found.")
+    image = next((item for item in product.images if item.id == image_id), None)
+    if image is None:
+        raise ApiError(404, "image_not_found", "The product photo was not found.")
+    await destroy_image(image.cloudinary_public_id, settings, int(datetime.now(UTC).timestamp()))
+    product.images.remove(image)
+    await session.delete(image)
+    # Delete the old position first so compacting cannot collide with the
+    # per-product unique position constraint.
+    await session.flush()
+    for position, remaining in enumerate(product.images):
+        remaining.position = position
+    await session.commit()
+    return [_image_response(item) for item in product.images]

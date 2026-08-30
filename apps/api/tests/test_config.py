@@ -13,6 +13,9 @@ def production_settings(**overrides: object) -> Settings:
         "cors_origins": ["https://bukkystore.example"],
         "session_secret": "production-secret-value-with-at-least-32-characters",
         "payment_provider": "opay",
+        "cloudinary_cloud_name": "bukky-test",
+        "cloudinary_api_key": "cloudinary-key",
+        "cloudinary_api_secret": "cloudinary-secret",
     }
     values.update(overrides)
     return Settings(**values)  # type: ignore[arg-type]
@@ -26,6 +29,18 @@ def test_production_rejects_fake_payment_provider() -> None:
 def test_production_requires_explicit_cors_origin() -> None:
     with pytest.raises(ValidationError, match="CORS origin"):
         production_settings(cors_origins=[])
+
+
+def test_cloudinary_configuration_is_all_or_nothing_and_required_in_production() -> None:
+    with pytest.raises(ValidationError, match="must include"):
+        production_settings(cloudinary_api_secret=None)
+
+    with pytest.raises(ValidationError, match="required in production"):
+        production_settings(
+            cloudinary_cloud_name=None,
+            cloudinary_api_key=None,
+            cloudinary_api_secret=None,
+        )
 
 
 def test_reservation_duration_has_safe_bounds() -> None:

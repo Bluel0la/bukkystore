@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { CartLink } from "@/components/cart-link";
 import { ProductPurchasePanel } from "@/components/product-purchase-panel";
+import { ProductGallery } from "@/components/product-gallery";
 import { CatalogueRequestError, formatNaira, getProduct } from "@/lib/catalogue";
 
 type ProductPageProps = { params: Promise<{ slug: string }> };
@@ -32,20 +32,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
         <nav className="flex items-center gap-5 text-sm"><Link href="/#shop">Back to shop</Link><CartLink /></nav>
       </header>
       <div className="grid gap-10 md:grid-cols-2 md:items-start">
-        <div className="relative flex aspect-[4/5] items-center justify-center overflow-hidden rounded-[2.5rem] border border-[var(--line)] bg-[var(--sand)] text-center">
-          {product.primary_image ? (
-            <Image
-              alt={product.primary_image.alt_text}
-              className="object-cover"
-              fill
-              priority
-              sizes="(max-width: 768px) 100vw, 50vw"
-              src={product.primary_image.url}
-            />
-          ) : (
-            <div><span className="text-7xl text-[var(--peach)]" aria-hidden="true">B</span><p className="mt-5 text-xs uppercase tracking-[0.2em] text-[var(--muted)]">Photo coming soon</p></div>
-          )}
-        </div>
+        <ProductGallery images={product.images} />
         <section>
           <p className="text-xs uppercase tracking-[0.18em] text-[var(--wine)]">{product.category.name}</p>
           <h1 className="mt-3 text-4xl font-semibold tracking-[-0.045em]">{product.name}</h1>

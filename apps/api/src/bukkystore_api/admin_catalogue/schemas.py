@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Annotated, Self
+from typing import Annotated, Literal, Self
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
@@ -122,6 +122,53 @@ class AdminVariantResponse(AdminCatalogueSchema):
     status: VariantStatus
 
 
+class AdminProductImageResponse(AdminCatalogueSchema):
+    id: UUID
+    public_id: str
+    url: str
+    alt_text: str
+    width: int
+    height: int
+    position: int
+
+
+class ImageUploadSignatureResponse(AdminCatalogueSchema):
+    upload_url: str
+    cloud_name: str
+    api_key: str
+    timestamp: int
+    public_id: str
+    signature: str
+    signature_algorithm: Literal["sha256"] = "sha256"
+    max_bytes: int
+    allowed_mime_types: list[str]
+
+
+class ProductImageRegisterRequest(AdminCatalogueSchema):
+    public_id: Annotated[str, StringConstraints(min_length=20, max_length=255)]
+    version: int = Field(gt=0)
+    signature: Annotated[str, StringConstraints(pattern=r"^(?:[a-f0-9]{40}|[a-f0-9]{64})$")]
+    width: int = Field(gt=0, le=20_000)
+    height: int = Field(gt=0, le=20_000)
+    bytes: int = Field(gt=0, le=10_000_000)
+    format: Literal["jpg", "jpeg", "png", "webp", "avif"]
+    alt_text: Annotated[str, StringConstraints(strip_whitespace=True, min_length=2, max_length=255)]
+
+
+class ProductImageUpdateRequest(AdminCatalogueSchema):
+    alt_text: Annotated[str, StringConstraints(strip_whitespace=True, min_length=2, max_length=255)]
+
+
+class ProductImageReorderRequest(AdminCatalogueSchema):
+    image_ids: list[UUID] = Field(min_length=1, max_length=10)
+
+    @model_validator(mode="after")
+    def reject_duplicate_images(self) -> Self:
+        if len(self.image_ids) != len(set(self.image_ids)):
+            raise ValueError("Image identifiers must be unique")
+        return self
+
+
 class AdminProductResponse(AdminCatalogueSchema):
     id: UUID
     category: CategoryResponse
@@ -134,6 +181,7 @@ class AdminProductResponse(AdminCatalogueSchema):
     status: ProductStatus
     featured: bool
     variants: list[AdminVariantResponse]
+    images: list[AdminProductImageResponse]
     created_at: datetime
     updated_at: datetime
 

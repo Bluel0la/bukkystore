@@ -83,6 +83,10 @@ same-site cookies. Raw tokens are never persisted.
   dimensions, display position, and timestamps.
 - The public identifier is retained so an image can be transformed or deleted
   safely through Cloudinary.
+- Products accept at most ten images. Position zero is the storefront cover,
+  every position is unique per product, and removals compact the remaining order.
+- Delivery URLs are constructed only after the API verifies Cloudinary's signed
+  upload response; arbitrary client-supplied image URLs are never persisted.
 
 ### `product_variants`
 

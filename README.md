@@ -91,7 +91,11 @@ The development seed is idempotent and creates representative dresses, shoes, an
 bags with colour-and-size stock variants, plus provisional Lagos Mainland and
 Lagos Island delivery fees. Those fees are development defaults and must be
 confirmed with the store owner before launch. Product photography remains
-intentionally empty until real store photos are supplied.
+empty in the seed until real store photos are supplied. To enable the admin photo
+uploader, set `APP_CLOUDINARY_CLOUD_NAME`, `APP_CLOUDINARY_API_KEY`, and
+`APP_CLOUDINARY_API_SECRET`. The browser receives only a short-lived upload
+signature; the API secret remains server-side. Product edit screens then support
+upload progress, cover-photo ordering, accessible descriptions, and safe removal.
 
 Run reservation expiry periodically so abandoned checkouts release their stock:
 

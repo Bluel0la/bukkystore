@@ -139,6 +139,11 @@ POST   /admin/products
 GET    /admin/products/{product_id}
 PATCH  /admin/products/{product_id}
 POST   /admin/products/{product_id}/archive
+POST   /admin/products/{product_id}/images/signatures
+POST   /admin/products/{product_id}/images
+PATCH  /admin/products/{product_id}/images/reorder
+PATCH  /admin/products/{product_id}/images/{image_id}/alt-text
+DELETE /admin/products/{product_id}/images/{image_id}
 
 POST   /admin/variants/{variant_id}/stock-adjustments
 ```
@@ -153,10 +158,16 @@ Stock adjustments accept a bounded signed delta, a required reason, and an
 and return an idempotent replay for an identical retry. They never accept a
 replacement product object as a raw dictionary.
 
-Image signing and low-stock reporting remain planned follow-on routes.
-
-Cloudinary uploads use narrowly scoped signed parameters. The API verifies the
-completed upload before persisting image metadata.
+Image management is implemented for up to ten photos per product. The signature
+route chooses a product-scoped public identifier and returns a one-hour signed
+direct-upload request without exposing the API secret. The registration route
+verifies Cloudinary's signed response (SHA-1 default or SHA-256), dimensions, format, and byte
+limit, then constructs the delivery URL server-side before persisting metadata.
+Reordering requires the complete unique image set and updates positions in two
+phases to preserve the database uniqueness constraint. Removal succeeds in
+Cloudinary before metadata is deleted and positions are compacted; provider
+failures leave catalogue state unchanged. Alternative text is required and can
+be corrected independently.
 
 ## Admin delivery and store settings
 
