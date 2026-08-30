@@ -6,12 +6,14 @@ links, WhatsApp enquiries, simple administration, variant-level inventory, and
 provider-verified payments.
 
 The project has its foundation, public catalogue, authenticated catalogue
-management, payment-confirmation commerce, and order-operations slices. Customers can keep a local
-shopping bag, choose a simple Lagos delivery area, create a server-priced order,
+management, payment-confirmation commerce, order-operations, and operations
+dashboard slices. Customers can keep a local shopping bag, choose a simple Lagos
+delivery area, create a server-priced order,
 complete the deterministic development payment, and privately view its status.
 Administrators can inspect recent orders, contact customers on WhatsApp, move paid
 orders through fulfilment, cancel eligible orders with exactly-once stock
-restoration, and record completion of a manual refund from the dashboard.
+restoration, record completion of a manual refund, and monitor sales, fulfilment,
+stock risk, top products, and checkout sources from the dashboard.
 
 ## Agreed product boundaries
 

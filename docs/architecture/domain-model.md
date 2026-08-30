@@ -235,11 +235,21 @@ A singleton record holds the provisional name `Bukky Store`, logo reference,
 WhatsApp/phone details, social links, currency, city, minimum order, and business
 hours. Business configuration is not hardcoded.
 
+### Operational analytics
+
+The first analytics slice is a read-only projection over authoritative orders,
+order-item snapshots, refunds, and active variants. It stores no duplicate totals.
+Checkout `attribution_source` supplies the initial source breakdown, with missing
+values grouped as `Direct`. A dedicated order-created timestamp index supports
+bounded reporting windows.
+
 ### `analytics_events`
 
 Stores a constrained event type, anonymous session identifier, optional product,
 source, campaign, bounded metadata, and UTC timestamp. Event ingestion is
 best-effort, rate-limited, and isolated from purchasing transactions.
+This broader browsing/conversion event stream remains deferred; it is not required
+for the order-based operations dashboard.
 
 ## Database invariants
 

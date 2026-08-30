@@ -31,3 +31,14 @@ export type AdminOrder = AdminOrderSummary & {
   refunds: AdminRefund[]; available_actions: string[];
 };
 export type AdminOrderPage = { items: AdminOrderSummary[] };
+
+export type AdminAnalyticsOverview = {
+  generated_at: string; period_start: string; range_days: number; currency: "NGN";
+  total_orders: number; sales_orders: number; sales_minor: number; average_order_minor: number;
+  awaiting_payment_orders: number; open_fulfilment_orders: number; pending_refunds: number;
+  low_stock_variants: number;
+  top_products: Array<{ product_id: string; product_name: string; units_sold: number; sales_minor: number }>;
+  sources: Array<{ source: string; orders: number; sales_minor: number }>;
+  low_stock: Array<{ variant_id: string; product_id: string; product_name: string;
+    variant_name: string; sku: string; available_quantity: number; low_stock_threshold: number }>;
+};

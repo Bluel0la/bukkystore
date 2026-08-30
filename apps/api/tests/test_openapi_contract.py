@@ -41,6 +41,15 @@ def test_openapi_operations_do_not_violate_the_contract(case: Case) -> None:
         if case.headers is None:
             case.headers = {}
         case.headers.setdefault("Idempotency-Key", protected_header_paths[case.operation.path])
+        if case.operation.path == "/api/v1/checkout" and isinstance(case.body, dict):
+            delivery = case.body.get("delivery")
+            if isinstance(delivery, dict):
+                directions = delivery.get("directions")
+                if isinstance(directions, str) and len(directions.strip()) < 3:
+                    # Schemathesis may currently ignore minLength inside an optional
+                    # anyOf branch. Omit the optional field instead of fuzzing data
+                    # that its own OpenAPI generator considers invalid.
+                    delivery.pop("directions")
         # FastAPI reports missing required headers with its documented 422
         # validation response; Schemathesis currently expects 406 for this check.
         case.call_and_validate(excluded_checks=[missing_required_header])

@@ -107,6 +107,7 @@ class Order(CommerceTimestampMixin, Base):
         CheckConstraint("total_minor = subtotal_minor + delivery_fee_minor", name="total_matches"),
         CheckConstraint("length(currency) = 3", name="currency_length"),
         Index("ix_orders_status_created", "status", "created_at"),
+        Index("ix_orders_created_at", "created_at"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

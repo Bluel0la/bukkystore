@@ -8,7 +8,15 @@ from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_vali
 
 from bukkystore_api.commerce.models import OrderStatus, PaymentStatus
 
-Name = Annotated[str, StringConstraints(strip_whitespace=True, min_length=2, max_length=120)]
+Name = Annotated[
+    str,
+    StringConstraints(
+        strip_whitespace=True,
+        min_length=2,
+        max_length=120,
+        pattern=r"^\S.*\S$",
+    ),
+]
 Phone = Annotated[
     str,
     StringConstraints(strip_whitespace=True, pattern=r"^(?:\+234|0)[789]\d{9}$"),
@@ -23,7 +31,10 @@ Email = Annotated[
         pattern=r"^[^\s@]+@[^\s@]+\.[^\s@]+$",
     ),
 ]
-BoundedText = Annotated[str, StringConstraints(strip_whitespace=True, min_length=3)]
+BoundedText = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, min_length=3, pattern=r"^\S.{1,}\S$"),
+]
 
 
 class CommerceSchema(BaseModel):
@@ -47,7 +58,15 @@ class CheckoutDelivery(CommerceSchema):
     area_id: UUID
     address: Annotated[BoundedText, StringConstraints(max_length=500)]
     directions: (
-        Annotated[str, StringConstraints(strip_whitespace=True, min_length=3, max_length=500)]
+        Annotated[
+            str,
+            StringConstraints(
+                strip_whitespace=True,
+                min_length=3,
+                max_length=500,
+                pattern=r"^\S.{1,}\S$",
+            ),
+        ]
         | None
     ) = None
 
@@ -58,9 +77,25 @@ class CheckoutItem(CommerceSchema):
 
 
 class CheckoutAttribution(CommerceSchema):
-    source: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=50)]
+    source: Annotated[
+        str,
+        StringConstraints(
+            strip_whitespace=True,
+            min_length=1,
+            max_length=50,
+            pattern=r"^\S(?:.*\S)?$",
+        ),
+    ]
     campaign: (
-        Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=100)]
+        Annotated[
+            str,
+            StringConstraints(
+                strip_whitespace=True,
+                min_length=1,
+                max_length=100,
+                pattern=r"^\S(?:.*\S)?$",
+            ),
+        ]
         | None
     ) = None
 
@@ -99,7 +134,13 @@ class CheckoutResponse(CommerceSchema):
 
 class FakePaymentConfirmationRequest(CommerceSchema):
     order_number: Annotated[
-        str, StringConstraints(strip_whitespace=True, min_length=12, max_length=32)
+        str,
+        StringConstraints(
+            strip_whitespace=True,
+            min_length=12,
+            max_length=32,
+            pattern=r"^\S.{10,}\S$",
+        ),
     ]
     order_access_token: Annotated[str, StringConstraints(min_length=32, max_length=128)]
 

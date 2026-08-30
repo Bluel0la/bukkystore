@@ -202,12 +202,15 @@ inventory mutation.
 
 ```text
 GET /admin/analytics/overview
-GET /admin/analytics/products/{product_id}
-GET /admin/analytics/sources
 ```
 
-Time ranges are bounded and validated. Aggregation queries must be indexed and
-must not issue one query per product.
+The overview is implemented as a single authenticated response containing the
+selected period's order and sales totals, current fulfilment/refund workload,
+low-stock variants, top products, and checkout-source breakdown. `days` is bounded
+from 1 to 365. Sales include non-cancelled paid orders in `CONFIRMED`, `PROCESSING`,
+`OUT_FOR_DELIVERY`, or `COMPLETED`; pending/refund and stock counts are current
+operational totals rather than historical snapshots. Aggregate queries are indexed
+and issue no query per product or order.
 
 ## Configuration boundary
 

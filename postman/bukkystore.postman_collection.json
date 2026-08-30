@@ -295,6 +295,19 @@
           ] } }]
         },
         {
+          "name": "Get operations analytics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/v1/admin/analytics/overview?days=30", "host": ["{{base_url}}"], "path": ["api", "v1", "admin", "analytics", "overview"], "query": [{ "key": "days", "value": "30" }] },
+            "description": "Returns bounded sales, fulfilment, refund, low-stock, top-product, and checkout-source metrics for the operations dashboard."
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
+            "pm.test('returns the operations snapshot', function () { const body = pm.response.json(); pm.expect(body).to.have.property('range_days', 30); pm.expect(body.top_products).to.be.an('array'); pm.expect(body.sources).to.be.an('array'); });"
+          ] } }]
+        },
+        {
           "name": "Start order processing",
           "request": {
             "method": "POST",

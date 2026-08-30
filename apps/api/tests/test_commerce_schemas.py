@@ -26,10 +26,28 @@ def _checkout(**overrides: object) -> dict[str, object]:
 
 
 def test_checkout_schema_normalizes_customer_details() -> None:
-    checkout = CheckoutRequest.model_validate(_checkout())
+    payload = _checkout(
+        customer={
+            "full_name": "  Ada Okafor  ",
+            "phone": "+2348012345678",
+            "email": "ADA@example.com",
+        },
+        attribution={"source": "  instagram  ", "campaign": "  launch  "},
+    )
+    checkout = CheckoutRequest.model_validate(payload)
 
     assert checkout.customer.email == "ada@example.com"
+    assert checkout.customer.full_name == "Ada Okafor"
+    assert checkout.attribution is not None
+    assert checkout.attribution.source == "instagram"
     assert checkout.items[0].quantity == 2
+
+
+def test_checkout_openapi_excludes_whitespace_shorter_than_normalized_minimum() -> None:
+    schema = CheckoutRequest.model_json_schema()
+
+    customer = schema["$defs"]["CheckoutCustomer"]
+    assert customer["properties"]["full_name"]["pattern"] == r"^\S.*\S$"
 
 
 @pytest.mark.parametrize("phone", ["080123", "+441234567890", "not-a-phone"])

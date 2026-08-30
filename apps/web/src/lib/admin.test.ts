@@ -5,6 +5,7 @@ vi.mock("next/headers", () => ({ cookies: vi.fn(async () => ({ toString: cookieS
 
 import {
   adminRequest,
+  getAdminAnalytics,
   getAdminCategories,
   getAdminOrder,
   getAdminOrders,
@@ -35,6 +36,7 @@ describe("admin server client", () => {
     await getAdminCategories();
     await getAdminOrders();
     await getAdminOrder("order/id");
+    await getAdminAnalytics();
 
     expect(fetchMock).toHaveBeenNthCalledWith(
       1,
@@ -43,6 +45,7 @@ describe("admin server client", () => {
     );
     expect(fetchMock.mock.calls[2][0]).toContain("product%2Fid");
     expect(fetchMock.mock.calls[5][0]).toContain("order%2Fid");
+    expect(fetchMock.mock.calls[6][0]).toContain("/analytics/overview?days=30");
   });
 
   it("returns null for an expired session", async () => {

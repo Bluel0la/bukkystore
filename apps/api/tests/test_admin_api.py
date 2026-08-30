@@ -21,6 +21,13 @@ async def test_admin_orders_require_authentication(client: AsyncClient) -> None:
     assert response.json()["code"] == "authentication_required"
 
 
+async def test_admin_analytics_requires_authentication(client: AsyncClient) -> None:
+    response = await client.get("/api/v1/admin/analytics/overview")
+
+    assert response.status_code == 401
+    assert response.json()["code"] == "authentication_required"
+
+
 async def test_invalid_login_is_safe_and_sets_no_cookie(client: AsyncClient) -> None:
     response = await client.post(
         "/api/v1/admin/auth/login",
