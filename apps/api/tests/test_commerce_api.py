@@ -63,3 +63,23 @@ async def test_checkout_masks_malformed_json(client: AsyncClient) -> None:
 
     assert response.status_code == 422
     assert response.json()["code"] == "validation_failed"
+
+
+async def test_guest_payment_status_does_not_reveal_unknown_orders(client: AsyncClient) -> None:
+    response = await client.get(
+        "/api/v1/orders/BS-20260829-MISSING/payment-status",
+        params={"token": "x" * 32},
+    )
+
+    assert response.status_code == 404
+    assert response.json()["code"] == "order_not_found"
+
+
+async def test_fake_confirmation_requires_strict_private_order_fields(client: AsyncClient) -> None:
+    response = await client.post(
+        "/api/v1/payments/fake/confirm",
+        json={"order_number": "BS-20260829-UNKNOWN", "order_access_token": "x" * 32, "amount": 1},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["code"] == "validation_failed"

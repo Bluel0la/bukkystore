@@ -6,6 +6,8 @@ vi.mock("next/headers", () => ({ cookies: vi.fn(async () => ({ toString: cookieS
 import {
   adminRequest,
   getAdminCategories,
+  getAdminOrder,
+  getAdminOrders,
   getAdminProduct,
   getAdminProducts,
   getAdminUser,
@@ -31,6 +33,8 @@ describe("admin server client", () => {
     await getAdminProducts();
     await getAdminProduct("product/id");
     await getAdminCategories();
+    await getAdminOrders();
+    await getAdminOrder("order/id");
 
     expect(fetchMock).toHaveBeenNthCalledWith(
       1,
@@ -38,6 +42,7 @@ describe("admin server client", () => {
       expect.objectContaining({ headers: expect.objectContaining({ cookie: "bukky_admin_session=session" }) }),
     );
     expect(fetchMock.mock.calls[2][0]).toContain("product%2Fid");
+    expect(fetchMock.mock.calls[5][0]).toContain("order%2Fid");
   });
 
   it("returns null for an expired session", async () => {

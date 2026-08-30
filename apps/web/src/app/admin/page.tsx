@@ -2,11 +2,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { AdminLogout } from "@/components/admin-logout";
-import { getAdminProducts, getAdminUser } from "@/lib/admin";
+import { getAdminOrders, getAdminProducts, getAdminUser } from "@/lib/admin";
 
 export default async function AdminPage() {
-  const [user, catalogue] = await Promise.all([getAdminUser(), getAdminProducts()]);
-  if (!user || !catalogue) redirect("/admin/login");
+  const [user, catalogue, orderPage] = await Promise.all([getAdminUser(), getAdminProducts(), getAdminOrders()]);
+  if (!user || !catalogue || !orderPage) redirect("/admin/login");
   const products = catalogue?.items ?? [];
   const published = products.filter((product) => product.status === "ACTIVE").length;
   const lowStock = products.flatMap((product) => product.variants).filter((variant) => variant.status === "ACTIVE" && variant.available_quantity <= variant.low_stock_threshold).length;
@@ -20,14 +20,15 @@ export default async function AdminPage() {
         </div>
         <div className="flex gap-2"><Link className="rounded-full border border-[var(--line)] px-4 py-2 text-sm" href="/">View store</Link><AdminLogout /></div>
       </header>
-      <section aria-label="Catalogue summary" className="grid gap-3 sm:grid-cols-3">
-        {[["All products", products.length], ["Published", published], ["Low or out of stock", lowStock]].map(([label, value]) => (
+      <section aria-label="Store summary" className="grid gap-3 sm:grid-cols-4">
+        {[["Orders", orderPage.items.length], ["All products", products.length], ["Published", published], ["Low or out of stock", lowStock]].map(([label, value]) => (
           <article className="rounded-2xl border border-[var(--line)] bg-white p-5" key={label}>
             <p className="text-sm text-[var(--muted)]">{label}</p>
             <p className="mt-5 text-3xl font-semibold">{value}</p>
           </article>
         ))}
       </section>
+      <section className="mt-8" aria-labelledby="orders-heading"><div className="flex items-center justify-between"><h2 className="text-xl font-semibold" id="orders-heading">Recent orders</h2><Link className="rounded-full border border-[var(--line)] px-4 py-2 text-sm" href="/admin/orders">View all orders</Link></div><div className="mt-4 overflow-hidden rounded-2xl border border-[var(--line)] bg-white">{orderPage.items.slice(0, 5).map((order) => <Link className="flex items-center justify-between gap-4 border-b border-[var(--line)] p-4 transition hover:bg-[var(--paper)] last:border-0" href={`/admin/orders/${order.id}`} key={order.id}><div><p className="font-medium">{order.order_number}</p><p className="mt-1 text-xs text-[var(--muted)]">{order.customer_full_name} · {order.payment_status.replaceAll("_", " ")}</p></div><span className="text-sm">{order.status.replaceAll("_", " ")}</span></Link>)}{!orderPage.items.length && <p className="p-6 text-sm text-[var(--muted)]">No orders yet.</p>}</div></section>
       <section className="mt-8" aria-labelledby="products-heading">
         <div className="flex items-center justify-between"><h2 className="text-xl font-semibold" id="products-heading">Products</h2><Link className="admin-primary" href="/admin/products/new">Add product</Link></div>
         <div className="mt-4 overflow-hidden rounded-2xl border border-[var(--line)] bg-white">

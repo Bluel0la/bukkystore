@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Protocol
+from typing import Literal, Protocol
 from urllib.parse import urlencode
 
 from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field
@@ -22,6 +22,20 @@ class PaymentInitializationResponse(BaseModel):
 
     provider_reference: str = Field(min_length=1, max_length=128)
     payment_url: AnyHttpUrl
+
+
+class PaymentConfirmation(BaseModel):
+    """Normalized, already-authenticated result from a payment provider boundary."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    provider: str = Field(min_length=1, max_length=30)
+    event_key: str = Field(min_length=1, max_length=160)
+    internal_reference: str = Field(min_length=8, max_length=64)
+    provider_reference: str = Field(min_length=1, max_length=128)
+    amount_minor: int = Field(ge=0)
+    currency: str = Field(pattern=r"^[A-Z]{3}$")
+    status: Literal["SUCCESS", "FAILED"]
 
 
 class PaymentProviderError(Exception):

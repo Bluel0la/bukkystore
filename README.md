@@ -6,9 +6,11 @@ links, WhatsApp enquiries, simple administration, variant-level inventory, and
 provider-verified payments.
 
 The project has its foundation, public catalogue, authenticated catalogue
-management, and first commerce slice. Customers can keep a local shopping bag,
-choose a simple Lagos delivery area, and create a server-priced order with a timed
-stock reservation and provider-neutral payment handoff.
+management, and payment-confirmation commerce slice. Customers can keep a local
+shopping bag, choose a simple Lagos delivery area, create a server-priced order,
+complete the deterministic development payment, and privately view its status.
+Administrators can inspect recent orders, customer delivery details, line items,
+and payment state from the dashboard.
 
 ## Agreed product boundaries
 
@@ -74,6 +76,13 @@ The bootstrap command prompts for a password without echoing it. The first
 administrator must be an `OWNER`; subsequent `OWNER` or `ADMIN` accounts can be
 bootstrapped only from this trusted local command. There is no public admin signup.
 The dashboard is available at `http://localhost:3000/admin/login`.
+
+With the fake provider selected outside production, checkout redirects to a demo
+payment page. Its confirmation button exercises the same idempotent stock and
+order transaction used by a future authenticated provider callback; it does not
+trust a browser-supplied amount or status. OPay credentials and callback
+authentication remain intentionally deferred until merchant developer access is
+confirmed.
 
 The development seed is idempotent and creates representative dresses, shoes, and
 bags with colour-and-size stock variants, plus provisional Lagos Mainland and

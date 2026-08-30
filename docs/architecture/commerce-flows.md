@@ -51,6 +51,10 @@ For a success notification, the handler:
 
 Repeated success notifications return success without repeating stock changes.
 Out-of-order failure notifications cannot downgrade an already successful payment.
+Every normalized result also creates an append-only `payment_events` receipt with
+a sanitized payload hash and processing outcome. The fake provider's development
+confirmation endpoint uses this exact service while deriving amount, currency,
+references, and success state from trusted server records.
 
 ## Reservation expiry and late payment
 

@@ -29,3 +29,12 @@ export type CheckoutResponse = {
   order_access_token: string;
   idempotent_replay: boolean;
 };
+
+export type PaymentStatus = {
+  order_number: string;
+  order_status: "AWAITING_PAYMENT" | "CONFIRMED" | "PROCESSING" | "OUT_FOR_DELIVERY" | "COMPLETED" | "CANCELLED" | "REFUND_REQUIRED";
+  payment_status: "PENDING" | "SUCCESS" | "FAILED" | "REFUNDED" | "PARTIALLY_REFUNDED";
+  reservation_expires_at: string;
+  paid_at: string | null;
+  summary: CheckoutResponse["summary"];
+};

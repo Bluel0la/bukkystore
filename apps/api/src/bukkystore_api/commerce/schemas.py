@@ -95,3 +95,19 @@ class CheckoutResponse(CommerceSchema):
     payment_url: str
     order_access_token: str
     idempotent_replay: bool
+
+
+class FakePaymentConfirmationRequest(CommerceSchema):
+    order_number: Annotated[
+        str, StringConstraints(strip_whitespace=True, min_length=12, max_length=32)
+    ]
+    order_access_token: Annotated[str, StringConstraints(min_length=32, max_length=128)]
+
+
+class PaymentStatusResponse(CommerceSchema):
+    order_number: str
+    order_status: OrderStatus
+    payment_status: PaymentStatus
+    reservation_expires_at: datetime
+    paid_at: datetime | None = None
+    summary: CheckoutSummary

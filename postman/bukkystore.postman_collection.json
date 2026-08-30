@@ -172,8 +172,49 @@
             "  pm.expect(body.summary.total_minor).to.eql(body.summary.subtotal_minor + body.summary.delivery_fee_minor);",
             "  pm.expect(body.payment_url).to.be.a('string').that.is.not.empty;",
             "  pm.collectionVariables.set('postman_order_number', body.order_number);",
+            "  pm.collectionVariables.set('postman_order_access_token', body.order_access_token);",
             "});"
           ] } }]
+        },
+        {
+          "name": "Confirm fake payment",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order_number\": \"{{postman_order_number}}\",\n  \"order_access_token\": \"{{postman_order_access_token}}\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/v1/payments/fake/confirm", "host": ["{{base_url}}"], "path": ["api", "v1", "payments", "fake", "confirm"] },
+            "description": "Development-only confirmation using server-owned payment values and the idempotent stock transaction."
+          },
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+              "if (String(pm.environment.get('run_checkout_write')).toLowerCase() !== 'true') { pm.execution.skipRequest(); }"
+            ] } },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('confirms payment and order', function () { const body = pm.response.json(); pm.expect(body.payment_status).to.eql('SUCCESS'); pm.expect(['CONFIRMED', 'REFUND_REQUIRED']).to.include(body.order_status); });"
+            ] } }
+          ]
+        },
+        {
+          "name": "Read private order payment status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/v1/orders/{{postman_order_number}}/payment-status?token={{postman_order_access_token}}", "host": ["{{base_url}}"], "path": ["api", "v1", "orders", "{{postman_order_number}}", "payment-status"], "query": [{ "key": "token", "value": "{{postman_order_access_token}}" }] },
+            "description": "Reads a guest order's payment-safe summary using its private access token."
+          },
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+              "if (String(pm.environment.get('run_checkout_write')).toLowerCase() !== 'true') { pm.execution.skipRequest(); }"
+            ] } },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('returns the same order', function () { pm.expect(pm.response.json().order_number).to.eql(pm.collectionVariables.get('postman_order_number')); });"
+            ] } }
+          ]
         }
       ]
     },
@@ -238,6 +279,19 @@
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
             "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
             "pm.test('returns exact inventory', function () { const body = pm.response.json(); pm.expect(body.items).to.be.an('array').that.is.not.empty; pm.expect(body.items[0].variants[0]).to.have.property('stock_on_hand'); });"
+          ] } }]
+        },
+        {
+          "name": "List admin orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/v1/admin/orders?limit=10", "host": ["{{base_url}}"], "path": ["api", "v1", "admin", "orders"], "query": [{ "key": "limit", "value": "10" }] },
+            "description": "Returns recent orders with payment state for fulfilment. GET by UUID returns delivery and immutable line-item detail."
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
+            "pm.test('returns an order page', function () { pm.expect(pm.response.json()).to.have.property('items').that.is.an('array'); });"
           ] } }]
         },
         {

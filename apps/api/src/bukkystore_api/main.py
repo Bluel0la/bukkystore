@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from bukkystore_api.admin_catalogue.router import router as admin_catalogue_router
+from bukkystore_api.admin_orders.router import router as admin_orders_router
 from bukkystore_api.api import router
 from bukkystore_api.auth.router import router as auth_router
 from bukkystore_api.catalogue.router import router as catalogue_router
@@ -69,6 +70,7 @@ def create_app(
     app.include_router(catalogue_router)
     app.include_router(auth_router)
     app.include_router(admin_catalogue_router)
+    app.include_router(admin_orders_router)
     app.include_router(commerce_router)
 
     @app.exception_handler(ApiError)

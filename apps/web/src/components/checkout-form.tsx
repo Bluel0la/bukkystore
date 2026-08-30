@@ -62,7 +62,9 @@ export function CheckoutForm({
         return;
       }
       cart.clear();
-      onPaymentReady(result.payment_url);
+      const paymentUrl = new URL(result.payment_url);
+      paymentUrl.searchParams.set("token", result.order_access_token);
+      onPaymentReady(paymentUrl.toString());
     } catch {
       setError("We could not reach checkout. Please check your connection and try again.");
     } finally {

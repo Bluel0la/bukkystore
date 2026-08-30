@@ -45,8 +45,13 @@ GET  /orders/{order_number}/payment-status?token=...
 POST /payments/{provider}/webhook
 ```
 
-`GET /delivery-areas` and `POST /checkout` are implemented in this slice. Payment
-status and verified webhook routes remain the next payment-confirmation slice.
+`GET /delivery-areas`, `POST /checkout`, and the private guest payment-status route
+are implemented. Development and test environments also expose
+`POST /payments/fake/confirm`; it accepts only the order number and guest access
+token, derives all provider-owned values from the database, and feeds the same
+idempotent confirmation transaction intended for real authenticated callbacks.
+The OPay callback route remains deferred until merchant documentation and
+credentials can be verified.
 
 The checkout request contains:
 
@@ -90,6 +95,12 @@ once.
 
 The public status route requires a high-entropy order access token, not merely an
 order number, to prevent enumeration of customer purchase state.
+
+Each normalized provider result is recorded as an append-only `payment_event`.
+The transaction locks the payment and relevant variants, verifies provider
+reference, amount, and currency, and creates idempotent `SALE` movements. A late
+verified payment consumes only unreserved stock; if that stock is unavailable the
+payment remains successful while the order moves to `REFUND_REQUIRED`.
 
 ## Analytics
 
@@ -170,6 +181,11 @@ POST /admin/orders/{order_id}/transitions
 POST /admin/orders/{order_id}/cancellations
 POST /admin/payments/{payment_id}/refunds
 ```
+
+The order list and detail routes are implemented with explicit eager loading and
+session authentication. They expose payment state, immutable line-item snapshots,
+and delivery details for fulfilment. Transitions, cancellations, and refunds are
+the next operations slice.
 
 Transition requests state the intended action rather than patching a status field.
 The API returns a conflict when current state, payment state, or inventory state

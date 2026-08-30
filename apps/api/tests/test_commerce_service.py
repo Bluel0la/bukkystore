@@ -20,12 +20,14 @@ from bukkystore_api.commerce.models import (
 )
 from bukkystore_api.commerce.payments import (
     FakePaymentProvider,
+    PaymentConfirmation,
     PaymentInitializationRequest,
     PaymentInitializationResponse,
     PaymentProviderError,
 )
 from bukkystore_api.commerce.schemas import CheckoutRequest
 from bukkystore_api.commerce.service import (
+    confirm_payment,
     create_checkout,
     expire_reservations,
     list_delivery_areas,
@@ -306,3 +308,144 @@ async def test_expiry_noops_when_nothing_is_due() -> None:
     session.scalars = AsyncMock(return_value=ScalarItems([]))
 
     assert await expire_reservations(session) == 0
+
+
+def _payable_order(variant: ProductVariant, *, reservation_status: ReservationStatus) -> Payment:
+    now = datetime.now(UTC)
+    order = Order(
+        id=uuid4(),
+        order_number="BS-20260829-PAYMENT",
+        idempotency_key_hash="key-hash",
+        request_fingerprint="fingerprint",
+        access_token_hash="access-hash",
+        customer_full_name="Ada Okafor",
+        customer_phone="08012345678",
+        delivery_area_id=uuid4(),
+        delivery_area_name="Lagos Mainland",
+        delivery_address="12 Example Street",
+        subtotal_minor=100_000,
+        delivery_fee_minor=20_000,
+        total_minor=120_000,
+        currency="NGN",
+        status=OrderStatus.AWAITING_PAYMENT,
+    )
+    reservation = InventoryReservation(
+        id=uuid4(),
+        order=order,
+        status=reservation_status,
+        expires_at=now + timedelta(minutes=15),
+    )
+    reservation.items.append(ReservationItem(variant=variant, variant_id=variant.id, quantity=1))
+    payment = Payment(
+        id=uuid4(),
+        order=order,
+        provider="fake",
+        internal_reference="BKS-PAYMENT-REFERENCE",
+        provider_reference="fake-BKS-PAYMENT-REFERENCE",
+        expected_amount_minor=120_000,
+        currency="NGN",
+        status=PaymentStatus.PENDING,
+        expires_at=now + timedelta(minutes=15),
+    )
+    return payment
+
+
+def _confirmation(payment: Payment) -> PaymentConfirmation:
+    assert payment.provider_reference is not None
+    return PaymentConfirmation(
+        provider="fake",
+        event_key="fake-confirm:BKS-PAYMENT-REFERENCE",
+        internal_reference=payment.internal_reference,
+        provider_reference=payment.provider_reference,
+        amount_minor=payment.expected_amount_minor,
+        currency=payment.currency,
+        status="SUCCESS",
+    )
+
+
+async def test_successful_confirmation_converts_stock_once() -> None:
+    variant = _variant(stock=5, reserved=1)
+    payment = _payable_order(variant, reservation_status=ReservationStatus.ACTIVE)
+    session = MagicMock(spec=AsyncSession)
+    session.scalars = AsyncMock(side_effect=[ScalarItems([payment]), ScalarItems([variant])])
+    session.scalar = AsyncMock(return_value=None)
+    session.commit = AsyncMock()
+    session.rollback = AsyncMock()
+
+    response = await confirm_payment(session, _confirmation(payment))
+
+    assert response.payment_status is PaymentStatus.SUCCESS
+    assert response.order_status is OrderStatus.CONFIRMED
+    assert variant.stock_on_hand == 4
+    assert variant.reserved_quantity == 0
+    assert payment.order.reservation.status is ReservationStatus.CONVERTED
+    assert session.add.call_count == 2
+    session.commit.assert_awaited_once()
+
+
+async def test_late_payment_without_available_stock_requires_refund() -> None:
+    variant = _variant(stock=1, reserved=1)
+    payment = _payable_order(variant, reservation_status=ReservationStatus.EXPIRED)
+    session = MagicMock(spec=AsyncSession)
+    session.scalars = AsyncMock(side_effect=[ScalarItems([payment]), ScalarItems([variant])])
+    session.scalar = AsyncMock(return_value=None)
+    session.commit = AsyncMock()
+    session.rollback = AsyncMock()
+
+    response = await confirm_payment(session, _confirmation(payment))
+
+    assert response.payment_status is PaymentStatus.SUCCESS
+    assert response.order_status is OrderStatus.REFUND_REQUIRED
+    assert variant.stock_on_hand == 1
+    assert variant.reserved_quantity == 1
+    assert session.add.call_count == 1
+
+
+async def test_confirmation_rejects_wrong_amount_before_stock_changes() -> None:
+    variant = _variant(stock=5, reserved=1)
+    payment = _payable_order(variant, reservation_status=ReservationStatus.ACTIVE)
+    session = MagicMock(spec=AsyncSession)
+    session.scalars = AsyncMock(return_value=ScalarItems([payment]))
+    confirmation = _confirmation(payment).model_copy(update={"amount_minor": 1})
+
+    with pytest.raises(ApiError) as error:
+        await confirm_payment(session, confirmation)
+
+    assert error.value.code == "payment_amount_mismatch"
+    assert variant.stock_on_hand == 5
+    assert variant.reserved_quantity == 1
+
+
+async def test_failed_confirmation_releases_active_reservation() -> None:
+    variant = _variant(stock=5, reserved=1)
+    payment = _payable_order(variant, reservation_status=ReservationStatus.ACTIVE)
+    confirmation = _confirmation(payment).model_copy(update={"status": "FAILED"})
+    session = MagicMock(spec=AsyncSession)
+    session.scalars = AsyncMock(side_effect=[ScalarItems([payment]), ScalarItems([variant])])
+    session.scalar = AsyncMock(return_value=None)
+    session.commit = AsyncMock()
+    session.rollback = AsyncMock()
+
+    response = await confirm_payment(session, confirmation)
+
+    assert response.payment_status is PaymentStatus.FAILED
+    assert response.order_status is OrderStatus.CANCELLED
+    assert variant.reserved_quantity == 0
+    assert payment.order.reservation.status is ReservationStatus.RELEASED
+
+
+async def test_late_payment_uses_only_unreserved_stock() -> None:
+    variant = _variant(stock=3, reserved=1)
+    payment = _payable_order(variant, reservation_status=ReservationStatus.EXPIRED)
+    session = MagicMock(spec=AsyncSession)
+    session.scalars = AsyncMock(side_effect=[ScalarItems([payment]), ScalarItems([variant])])
+    session.scalar = AsyncMock(return_value=None)
+    session.commit = AsyncMock()
+    session.rollback = AsyncMock()
+
+    response = await confirm_payment(session, _confirmation(payment))
+
+    assert response.order_status is OrderStatus.CONFIRMED
+    assert variant.stock_on_hand == 2
+    assert variant.reserved_quantity == 1
+    assert payment.order.reservation.status is ReservationStatus.CONVERTED

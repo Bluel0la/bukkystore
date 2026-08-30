@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 
-import type { AdminProduct, AdminProductPage, AdminUser } from "@/lib/admin-types";
+import type { AdminOrder, AdminOrderPage, AdminProduct, AdminProductPage, AdminUser } from "@/lib/admin-types";
 import type { Category } from "@/lib/catalogue";
 
 function internalUrl(path: string): string {
@@ -36,4 +36,12 @@ export function getAdminProduct(productId: string): Promise<AdminProduct | null>
 
 export function getAdminCategories(): Promise<Category[] | null> {
   return adminRequest<Category[]>("/categories");
+}
+
+export function getAdminOrders(): Promise<AdminOrderPage | null> {
+  return adminRequest<AdminOrderPage>("/orders?limit=100");
+}
+
+export function getAdminOrder(orderId: string): Promise<AdminOrder | null> {
+  return adminRequest<AdminOrder>(`/orders/${encodeURIComponent(orderId)}`);
 }

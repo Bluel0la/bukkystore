@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import hmac
 import json
 import logging
 import secrets
@@ -13,7 +14,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 
 from bukkystore_api.auth.security import hash_token
-from bukkystore_api.catalogue.models import ProductStatus, ProductVariant, VariantStatus
+from bukkystore_api.catalogue.models import (
+    InventoryMovement,
+    InventoryMovementType,
+    ProductStatus,
+    ProductVariant,
+    VariantStatus,
+)
 from bukkystore_api.commerce.models import (
     DeliveryArea,
     InventoryReservation,
@@ -21,11 +28,13 @@ from bukkystore_api.commerce.models import (
     OrderItem,
     OrderStatus,
     Payment,
+    PaymentEvent,
     PaymentStatus,
     ReservationItem,
     ReservationStatus,
 )
 from bukkystore_api.commerce.payments import (
+    PaymentConfirmation,
     PaymentInitializationRequest,
     PaymentInitializationResponse,
     PaymentProvider,
@@ -36,6 +45,7 @@ from bukkystore_api.commerce.schemas import (
     CheckoutResponse,
     CheckoutSummary,
     DeliveryAreaResponse,
+    PaymentStatusResponse,
 )
 from bukkystore_api.errors import ApiError
 
@@ -337,3 +347,285 @@ async def expire_reservations(
     if reservations:
         await session.commit()
     return len(reservations)
+
+
+def _confirmation_hash(confirmation: PaymentConfirmation) -> str:
+    encoded = json.dumps(
+        confirmation.model_dump(mode="json"), sort_keys=True, separators=(",", ":")
+    )
+    return hashlib.sha256(encoded.encode()).hexdigest()
+
+
+async def _locked_payment(session: AsyncSession, internal_reference: str) -> Payment | None:
+    return (
+        (
+            await session.scalars(
+                select(Payment)
+                .where(Payment.internal_reference == internal_reference)
+                .with_for_update()
+                .options(
+                    joinedload(Payment.order)
+                    .joinedload(Order.reservation)
+                    .selectinload(InventoryReservation.items)
+                )
+            )
+        )
+        .unique()
+        .one_or_none()
+    )
+
+
+async def confirm_payment(
+    session: AsyncSession, confirmation: PaymentConfirmation
+) -> PaymentStatusResponse:
+    """Apply one authenticated payment result and its stock effects atomically."""
+
+    payment = await _locked_payment(session, confirmation.internal_reference)
+    if payment is None:
+        raise ApiError(404, "payment_not_found", "The payment could not be found.")
+    if payment.provider != confirmation.provider:
+        raise ApiError(409, "payment_provider_mismatch", "The payment details do not match.")
+    if payment.provider_reference != confirmation.provider_reference:
+        raise ApiError(409, "payment_reference_mismatch", "The payment details do not match.")
+    if (
+        payment.expected_amount_minor != confirmation.amount_minor
+        or payment.currency != confirmation.currency
+    ):
+        raise ApiError(409, "payment_amount_mismatch", "The payment amount does not match.")
+
+    existing_event = await session.scalar(
+        select(PaymentEvent).where(
+            PaymentEvent.provider == confirmation.provider,
+            PaymentEvent.event_key == confirmation.event_key,
+        )
+    )
+    if existing_event is not None:
+        if existing_event.payment_id != payment.id:
+            raise ApiError(409, "payment_event_conflict", "The payment event conflicts.")
+        return _payment_status_response(payment)
+
+    now = datetime.now(UTC)
+    result = "ignored_terminal"
+    reservation = payment.order.reservation
+    if reservation is None:
+        raise ApiError(409, "reservation_missing", "The order cannot be reconciled.")
+
+    if confirmation.status == "FAILED":
+        if payment.status is not PaymentStatus.SUCCESS:
+            if reservation.status is ReservationStatus.ACTIVE:
+                await _release_locked_reservation(session, reservation, now=now)
+            payment.status = PaymentStatus.FAILED
+            payment.failure_code = "provider_failed"
+            payment.order.status = OrderStatus.CANCELLED
+            result = "payment_failed"
+    elif payment.status is not PaymentStatus.SUCCESS:
+        result = await _convert_paid_reservation(session, payment, reservation, now=now)
+
+    session.add(
+        PaymentEvent(
+            payment=payment,
+            provider=confirmation.provider,
+            event_key=confirmation.event_key,
+            payload_hash=_confirmation_hash(confirmation),
+            reported_status=confirmation.status,
+            processing_result=result,
+            processed_at=now,
+        )
+    )
+    try:
+        await session.commit()
+    except IntegrityError as exc:
+        await session.rollback()
+        duplicate = await session.scalar(
+            select(PaymentEvent).where(
+                PaymentEvent.provider == confirmation.provider,
+                PaymentEvent.event_key == confirmation.event_key,
+            )
+        )
+        if duplicate is not None:
+            replayed = await _locked_payment(session, confirmation.internal_reference)
+            if replayed is not None:
+                return _payment_status_response(replayed)
+        raise ApiError(
+            409, "payment_confirmation_conflict", "Payment could not be confirmed."
+        ) from exc
+
+    logger.info(
+        "payment_status_changed",
+        extra={
+            "order_id": str(payment.order_id),
+            "payment_id": str(payment.id),
+            "status": payment.status.value,
+            "order_status": payment.order.status.value,
+            "changed_at": now.isoformat(),
+            "trigger": "provider_confirmation",
+            "processing_result": result,
+        },
+    )
+    paid_at = now if payment.status is PaymentStatus.SUCCESS else None
+    return _payment_status_response(payment, paid_at=paid_at)
+
+
+async def _release_locked_reservation(
+    session: AsyncSession, reservation: InventoryReservation, *, now: datetime
+) -> None:
+    variants = await _lock_reservation_variants(session, reservation)
+    for item in reservation.items:
+        variant = variants[item.variant_id]
+        if variant.reserved_quantity < item.quantity:
+            raise ApiError(409, "inventory_inconsistent", "The order cannot be reconciled.")
+        variant.reserved_quantity -= item.quantity
+    reservation.status = ReservationStatus.RELEASED
+    reservation.released_at = now
+
+
+async def _lock_reservation_variants(
+    session: AsyncSession, reservation: InventoryReservation
+) -> dict[UUID, ProductVariant]:
+    variant_ids = sorted(item.variant_id for item in reservation.items)
+    variants = list(
+        (
+            await session.scalars(
+                select(ProductVariant)
+                .where(ProductVariant.id.in_(variant_ids))
+                .order_by(ProductVariant.id)
+                .with_for_update()
+            )
+        ).all()
+    )
+    if len(variants) != len(variant_ids):
+        raise ApiError(409, "inventory_inconsistent", "The order cannot be reconciled.")
+    return {variant.id: variant for variant in variants}
+
+
+async def _convert_paid_reservation(
+    session: AsyncSession,
+    payment: Payment,
+    reservation: InventoryReservation,
+    *,
+    now: datetime,
+) -> str:
+    variants = await _lock_reservation_variants(session, reservation)
+    active = reservation.status is ReservationStatus.ACTIVE
+    if reservation.status is ReservationStatus.CONVERTED:
+        payment.status = PaymentStatus.SUCCESS
+        payment.order.status = OrderStatus.CONFIRMED
+        return "already_converted"
+
+    if any(
+        (
+            variants[item.variant_id].stock_on_hand
+            if active
+            else variants[item.variant_id].available_quantity
+        )
+        < item.quantity
+        for item in reservation.items
+    ):
+        payment.status = PaymentStatus.SUCCESS
+        payment.order.status = OrderStatus.REFUND_REQUIRED
+        logger.warning(
+            "payment_refund_required",
+            extra={
+                "order_id": str(payment.order_id),
+                "triggered_at": now.isoformat(),
+                "trigger": "paid_after_stock_unavailable",
+            },
+        )
+        return "refund_required"
+
+    for item in reservation.items:
+        variant = variants[item.variant_id]
+        if active:
+            if variant.reserved_quantity < item.quantity:
+                raise ApiError(409, "inventory_inconsistent", "The order cannot be reconciled.")
+            variant.reserved_quantity -= item.quantity
+        variant.stock_on_hand -= item.quantity
+        session.add(
+            InventoryMovement(
+                variant_id=variant.id,
+                movement_type=InventoryMovementType.SALE,
+                quantity_delta=-item.quantity,
+                reason=f"Paid order {payment.order.order_number}",
+                idempotency_key=f"sale:{payment.id}:{variant.id}",
+                order_id=payment.order_id,
+                reservation_id=reservation.id,
+            )
+        )
+    reservation.status = ReservationStatus.CONVERTED
+    reservation.converted_at = now
+    payment.status = PaymentStatus.SUCCESS
+    payment.failure_code = None
+    payment.order.status = OrderStatus.CONFIRMED
+    return "stock_converted"
+
+
+def _payment_status_response(
+    payment: Payment, *, paid_at: datetime | None = None
+) -> PaymentStatusResponse:
+    reservation = payment.order.reservation
+    if reservation is None:
+        raise ApiError(409, "reservation_missing", "The order cannot be reconciled.")
+    return PaymentStatusResponse(
+        order_number=payment.order.order_number,
+        order_status=payment.order.status,
+        payment_status=payment.status,
+        reservation_expires_at=reservation.expires_at,
+        paid_at=paid_at or reservation.converted_at,
+        summary=CheckoutSummary(
+            subtotal_minor=payment.order.subtotal_minor,
+            delivery_fee_minor=payment.order.delivery_fee_minor,
+            total_minor=payment.order.total_minor,
+            currency=payment.order.currency,
+        ),
+    )
+
+
+async def get_payment_status(
+    session: AsyncSession, *, order_number: str, access_token: str, secret: str
+) -> PaymentStatusResponse:
+    order = (
+        (
+            await session.scalars(
+                select(Order)
+                .where(Order.order_number == order_number)
+                .options(joinedload(Order.reservation), selectinload(Order.payments))
+            )
+        )
+        .unique()
+        .one_or_none()
+    )
+    provided_hash = hash_token(access_token, secret)
+    if order is None or not hmac.compare_digest(provided_hash, order.access_token_hash):
+        raise ApiError(404, "order_not_found", "The order could not be found.")
+    if not order.payments:
+        raise ApiError(409, "payment_missing", "The order cannot be reconciled.")
+    return _payment_status_response(order.payments[-1])
+
+
+async def confirm_fake_payment(
+    session: AsyncSession, *, order_number: str, access_token: str, secret: str
+) -> PaymentStatusResponse:
+    status = await get_payment_status(
+        session, order_number=order_number, access_token=access_token, secret=secret
+    )
+    payment = await session.scalar(
+        select(Payment)
+        .join(Payment.order)
+        .where(Order.order_number == status.order_number)
+        .order_by(Payment.created_at.desc())
+        .limit(1)
+    )
+    if payment is None or payment.provider != "fake" or payment.provider_reference is None:
+        raise ApiError(404, "payment_not_found", "The payment could not be found.")
+    return await confirm_payment(
+        session,
+        PaymentConfirmation(
+            provider="fake",
+            event_key=f"fake-confirm:{payment.internal_reference}",
+            internal_reference=payment.internal_reference,
+            provider_reference=payment.provider_reference,
+            amount_minor=payment.expected_amount_minor,
+            currency=payment.currency,
+            status="SUCCESS",
+        ),
+    )

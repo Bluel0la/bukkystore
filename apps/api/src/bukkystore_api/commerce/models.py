@@ -256,3 +256,32 @@ class Payment(CommerceTimestampMixin, Base):
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     order: Mapped[Order] = relationship(back_populates="payments")
+    events: Mapped[list[PaymentEvent]] = relationship(
+        back_populates="payment", cascade="all, delete-orphan", order_by="PaymentEvent.received_at"
+    )
+
+
+class PaymentEvent(Base):
+    """Append-only receipt used to make provider callbacks safe to replay."""
+
+    __tablename__ = "payment_events"
+    __table_args__ = (
+        UniqueConstraint("provider", "event_key", name="uq_payment_events_provider_key"),
+        Index("ix_payment_events_payment_received", "payment_id", "received_at"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    payment_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("payments.id", ondelete="CASCADE"), nullable=False
+    )
+    provider: Mapped[str] = mapped_column(String(30), nullable=False)
+    event_key: Mapped[str] = mapped_column(String(160), nullable=False)
+    payload_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    reported_status: Mapped[str] = mapped_column(String(30), nullable=False)
+    processing_result: Mapped[str] = mapped_column(String(40), nullable=False)
+    received_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    processed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    payment: Mapped[Payment] = relationship(back_populates="events")
