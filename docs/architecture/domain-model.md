@@ -174,6 +174,12 @@ Stores product and variant references plus immutable snapshots of product name,
 variant description, SKU, unit price, quantity, and line subtotal. Quantities must
 be positive and totals must equal the server-calculated values.
 
+### `order_status_events`
+
+Append-only records capture the previous and new status, operation type, reason,
+admin actor, timestamp, and unique idempotency hash for each fulfilment or
+cancellation action.
+
 ### `inventory_reservations`
 
 One checkout reservation per order, with status `ACTIVE`, `CONVERTED`, `RELEASED`,
@@ -215,9 +221,11 @@ and timestamps. A uniqueness constraint prevents duplicate notification handling
 
 ### `refunds`
 
-Stores payment, amount, reason, mode (`MANUAL` or `PROVIDER_API`), provider
-reference, status, actor, and timestamps. Refund status is `PENDING`, `SUCCESS`,
-or `FAILED`. A cancelled order and a successful refund are separate facts.
+Stores order, payment, amount, currency, reason, mode (`MANUAL`), manual reference,
+status, creator/completer actors, completion idempotency hash, and timestamps.
+Refund status is `PENDING`, `SUCCESS`, or `FAILED`. The initial release permits one
+full refund per order. A cancelled order and a successful refund are separate
+facts.
 
 ## Settings and analytics
 

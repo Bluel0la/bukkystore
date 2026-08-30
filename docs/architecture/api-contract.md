@@ -179,17 +179,24 @@ GET  /admin/orders
 GET  /admin/orders/{order_id}
 POST /admin/orders/{order_id}/transitions
 POST /admin/orders/{order_id}/cancellations
-POST /admin/payments/{payment_id}/refunds
+POST /admin/refunds/{refund_id}/complete
 ```
 
-The order list and detail routes are implemented with explicit eager loading and
-session authentication. They expose payment state, immutable line-item snapshots,
-and delivery details for fulfilment. Transitions, cancellations, and refunds are
-the next operations slice.
+The routes use session authentication and explicit eager loading. Order detail
+includes payment state, immutable line-item snapshots, delivery details, refund
+state, and the actions currently allowed by the domain service.
 
 Transition requests state the intended action rather than patching a status field.
 The API returns a conflict when current state, payment state, or inventory state
 does not permit that action.
+
+Every mutating request requires CSRF validation plus an `Idempotency-Key` header.
+Paid orders advance only through `CONFIRMED` -> `PROCESSING` ->
+`OUT_FOR_DELIVERY` -> `COMPLETED`. Cancellation is unavailable after dispatch.
+Cancelling a paid, undispatched order restores item stock once and creates one
+pending full manual refund. Refund completion records an optional external
+reference and changes the associated payment to `REFUNDED`; it never repeats the
+inventory mutation.
 
 ## Admin analytics
 

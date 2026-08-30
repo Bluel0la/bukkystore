@@ -295,6 +295,75 @@
           ] } }]
         },
         {
+          "name": "Start order processing",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRF-Token", "value": "{{csrf_token}}" },
+              { "key": "Idempotency-Key", "value": "postman-transition-{{$guid}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"action\": \"START_PROCESSING\"\n}" },
+            "url": { "raw": "{{base_url}}/api/v1/admin/orders/{{admin_order_id}}/transitions", "host": ["{{base_url}}"], "path": ["api", "v1", "admin", "orders", "{{admin_order_id}}", "transitions"] },
+            "description": "Advances one paid CONFIRMED order to PROCESSING. Disabled by default because it mutates live order state."
+          },
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+              "if (String(pm.environment.get('run_order_operations_write')).toLowerCase() !== 'true' || !pm.environment.get('admin_order_id')) { pm.execution.skipRequest(); }"
+            ] } },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('moves order to processing', function () { pm.expect(pm.response.json().status).to.eql('PROCESSING'); });"
+            ] } }
+          ]
+        },
+        {
+          "name": "Cancel eligible order",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRF-Token", "value": "{{csrf_token}}" },
+              { "key": "Idempotency-Key", "value": "postman-cancellation-{{$guid}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"reason\": \"Cancelled by the Postman contract run\"\n}" },
+            "url": { "raw": "{{base_url}}/api/v1/admin/orders/{{admin_order_id}}/cancellations", "host": ["{{base_url}}"], "path": ["api", "v1", "admin", "orders", "{{admin_order_id}}", "cancellations"] },
+            "description": "Cancels one eligible order and performs the appropriate reservation, stock, and refund effects exactly once. Disabled by default."
+          },
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+              "if (String(pm.environment.get('run_order_operations_write')).toLowerCase() !== 'true' || !pm.environment.get('admin_order_id')) { pm.execution.skipRequest(); }"
+            ] } },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('cancels the order', function () { pm.expect(pm.response.json().status).to.eql('CANCELLED'); });"
+            ] } }
+          ]
+        },
+        {
+          "name": "Complete manual refund",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRF-Token", "value": "{{csrf_token}}" },
+              { "key": "Idempotency-Key", "value": "postman-refund-{{$guid}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"manual_reference\": \"POSTMAN-MANUAL-REFUND\"\n}" },
+            "url": { "raw": "{{base_url}}/api/v1/admin/refunds/{{admin_refund_id}}/complete", "host": ["{{base_url}}"], "path": ["api", "v1", "admin", "refunds", "{{admin_refund_id}}", "complete"] },
+            "description": "Records that a pending manual refund was sent and marks its payment REFUNDED. Disabled by default."
+          },
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+              "if (String(pm.environment.get('run_order_operations_write')).toLowerCase() !== 'true' || !pm.environment.get('admin_refund_id')) { pm.execution.skipRequest(); }"
+            ] } },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('completes the refund', function () { pm.expect(pm.response.json().status).to.eql('SUCCESS'); });"
+            ] } }
+          ]
+        },
+        {
           "name": "Logout",
           "request": {
             "method": "POST",

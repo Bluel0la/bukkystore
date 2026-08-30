@@ -6,11 +6,12 @@ links, WhatsApp enquiries, simple administration, variant-level inventory, and
 provider-verified payments.
 
 The project has its foundation, public catalogue, authenticated catalogue
-management, and payment-confirmation commerce slice. Customers can keep a local
+management, payment-confirmation commerce, and order-operations slices. Customers can keep a local
 shopping bag, choose a simple Lagos delivery area, create a server-priced order,
 complete the deterministic development payment, and privately view its status.
-Administrators can inspect recent orders, customer delivery details, line items,
-and payment state from the dashboard.
+Administrators can inspect recent orders, contact customers on WhatsApp, move paid
+orders through fulfilment, cancel eligible orders with exactly-once stock
+restoration, and record completion of a manual refund from the dashboard.
 
 ## Agreed product boundaries
 
@@ -117,3 +118,9 @@ start the API, and run:
 ```text
 postman collection run ./postman/bukkystore.postman_collection.json -e ./postman/bukkystore.postman_environment.json --reporters "cli,junit"
 ```
+
+## Commands
+
+uv run --project apps/api uvicorn --factory bukkystore_api.main:create_app --app-dir apps/api/src --reload
+
+npm run web:dev

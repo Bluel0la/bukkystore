@@ -410,15 +410,20 @@ async def confirm_payment(
     if reservation is None:
         raise ApiError(409, "reservation_missing", "The order cannot be reconciled.")
 
+    terminal_success_statuses = {
+        PaymentStatus.SUCCESS,
+        PaymentStatus.PARTIALLY_REFUNDED,
+        PaymentStatus.REFUNDED,
+    }
     if confirmation.status == "FAILED":
-        if payment.status is not PaymentStatus.SUCCESS:
+        if payment.status not in terminal_success_statuses:
             if reservation.status is ReservationStatus.ACTIVE:
                 await _release_locked_reservation(session, reservation, now=now)
             payment.status = PaymentStatus.FAILED
             payment.failure_code = "provider_failed"
             payment.order.status = OrderStatus.CANCELLED
             result = "payment_failed"
-    elif payment.status is not PaymentStatus.SUCCESS:
+    elif payment.status not in terminal_success_statuses:
         result = await _convert_paid_reservation(session, payment, reservation, now=now)
 
     session.add(
@@ -505,6 +510,20 @@ async def _convert_paid_reservation(
     *,
     now: datetime,
 ) -> str:
+    if payment.order.status is OrderStatus.CANCELLED:
+        payment.status = PaymentStatus.SUCCESS
+        payment.failure_code = None
+        payment.order.status = OrderStatus.REFUND_REQUIRED
+        logger.warning(
+            "payment_refund_required",
+            extra={
+                "order_id": str(payment.order_id),
+                "triggered_at": now.isoformat(),
+                "trigger": "paid_after_order_cancelled",
+            },
+        )
+        return "refund_required_after_cancellation"
+
     variants = await _lock_reservation_variants(session, reservation)
     active = reservation.status is ReservationStatus.ACTIVE
     if reservation.status is ReservationStatus.CONVERTED:

@@ -52,6 +52,16 @@ class PaymentStatus(enum.StrEnum):
     REFUNDED = "REFUNDED"
 
 
+class RefundMode(enum.StrEnum):
+    MANUAL = "MANUAL"
+
+
+class RefundStatus(enum.StrEnum):
+    PENDING = "PENDING"
+    SUCCESS = "SUCCESS"
+    FAILED = "FAILED"
+
+
 class CommerceTimestampMixin:
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -136,6 +146,14 @@ class Order(CommerceTimestampMixin, Base):
     )
     payments: Mapped[list[Payment]] = relationship(
         back_populates="order", cascade="all, delete-orphan", order_by="Payment.created_at"
+    )
+    status_events: Mapped[list[OrderStatusEvent]] = relationship(
+        back_populates="order",
+        cascade="all, delete-orphan",
+        order_by="OrderStatusEvent.created_at",
+    )
+    refunds: Mapped[list[Refund]] = relationship(
+        back_populates="order", cascade="all, delete-orphan", order_by="Refund.created_at"
     )
 
 
@@ -259,6 +277,9 @@ class Payment(CommerceTimestampMixin, Base):
     events: Mapped[list[PaymentEvent]] = relationship(
         back_populates="payment", cascade="all, delete-orphan", order_by="PaymentEvent.received_at"
     )
+    refunds: Mapped[list[Refund]] = relationship(
+        back_populates="payment", cascade="all, delete-orphan", order_by="Refund.created_at"
+    )
 
 
 class PaymentEvent(Base):
@@ -285,3 +306,85 @@ class PaymentEvent(Base):
     processed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     payment: Mapped[Payment] = relationship(back_populates="events")
+
+
+class OrderStatusEvent(Base):
+    """Append-only audit record for an administrator's order operation."""
+
+    __tablename__ = "order_status_events"
+    __table_args__ = (
+        UniqueConstraint("idempotency_key_hash", name="uq_order_status_events_idempotency_hash"),
+        Index("ix_order_status_events_order_created", "order_id", "created_at"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    order_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("orders.id", ondelete="CASCADE"), nullable=False
+    )
+    previous_status: Mapped[OrderStatus] = mapped_column(
+        Enum(OrderStatus, name="order_status", native_enum=True), nullable=False
+    )
+    new_status: Mapped[OrderStatus] = mapped_column(
+        Enum(OrderStatus, name="order_status", native_enum=True), nullable=False
+    )
+    event_type: Mapped[str] = mapped_column(String(40), nullable=False)
+    reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    idempotency_key_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    actor_user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    order: Mapped[Order] = relationship(back_populates="status_events")
+
+
+class Refund(CommerceTimestampMixin, Base):
+    """A finance obligation kept separate from order cancellation and stock."""
+
+    __tablename__ = "refunds"
+    __table_args__ = (
+        UniqueConstraint("order_id", name="uq_refunds_order_id"),
+        UniqueConstraint(
+            "completed_idempotency_key_hash", name="uq_refunds_completed_idempotency_hash"
+        ),
+        CheckConstraint("amount_minor > 0", name="amount_positive"),
+        CheckConstraint("length(currency) = 3", name="currency_length"),
+        Index("ix_refunds_status_created", "status", "created_at"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    order_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("orders.id", ondelete="CASCADE"), nullable=False
+    )
+    payment_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("payments.id", ondelete="RESTRICT"), nullable=False
+    )
+    amount_minor: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    currency: Mapped[str] = mapped_column(String(3), nullable=False)
+    reason: Mapped[str] = mapped_column(String(500), nullable=False)
+    mode: Mapped[RefundMode] = mapped_column(
+        Enum(RefundMode, name="refund_mode", native_enum=True),
+        nullable=False,
+        default=RefundMode.MANUAL,
+        server_default=text("'MANUAL'"),
+    )
+    status: Mapped[RefundStatus] = mapped_column(
+        Enum(RefundStatus, name="refund_status", native_enum=True),
+        nullable=False,
+        default=RefundStatus.PENDING,
+        server_default=text("'PENDING'"),
+    )
+    manual_reference: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    completed_idempotency_key_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    created_by_user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
+    )
+    completed_by_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=True
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    order: Mapped[Order] = relationship(back_populates="refunds")
+    payment: Mapped[Payment] = relationship(back_populates="refunds")

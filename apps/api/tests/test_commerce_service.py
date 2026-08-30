@@ -401,6 +401,51 @@ async def test_late_payment_without_available_stock_requires_refund() -> None:
     assert session.add.call_count == 1
 
 
+async def test_payment_after_cancellation_requires_refund_without_using_stock() -> None:
+    variant = _variant(stock=5, reserved=0)
+    payment = _payable_order(variant, reservation_status=ReservationStatus.RELEASED)
+    payment.order.status = OrderStatus.CANCELLED
+    session = MagicMock(spec=AsyncSession)
+    session.scalars = AsyncMock(return_value=ScalarItems([payment]))
+    session.scalar = AsyncMock(return_value=None)
+    session.commit = AsyncMock()
+    session.rollback = AsyncMock()
+
+    response = await confirm_payment(session, _confirmation(payment))
+
+    assert response.payment_status is PaymentStatus.SUCCESS
+    assert response.order_status is OrderStatus.REFUND_REQUIRED
+    assert variant.stock_on_hand == 5
+    assert variant.reserved_quantity == 0
+    assert payment.order.reservation.status is ReservationStatus.RELEASED
+    assert session.add.call_count == 1
+
+
+@pytest.mark.parametrize(
+    "payment_status",
+    [PaymentStatus.PARTIALLY_REFUNDED, PaymentStatus.REFUNDED],
+)
+async def test_confirmation_does_not_reverse_refund_status(
+    payment_status: PaymentStatus,
+) -> None:
+    variant = _variant(stock=5, reserved=0)
+    payment = _payable_order(variant, reservation_status=ReservationStatus.CONVERTED)
+    payment.status = payment_status
+    payment.order.status = OrderStatus.CANCELLED
+    session = MagicMock(spec=AsyncSession)
+    session.scalars = AsyncMock(return_value=ScalarItems([payment]))
+    session.scalar = AsyncMock(return_value=None)
+    session.commit = AsyncMock()
+    session.rollback = AsyncMock()
+
+    response = await confirm_payment(session, _confirmation(payment))
+
+    assert response.payment_status is payment_status
+    assert response.order_status is OrderStatus.CANCELLED
+    assert variant.stock_on_hand == 5
+    assert session.add.call_count == 1
+
+
 async def test_confirmation_rejects_wrong_amount_before_stock_changes() -> None:
     variant = _variant(stock=5, reserved=1)
     payment = _payable_order(variant, reservation_status=ReservationStatus.ACTIVE)

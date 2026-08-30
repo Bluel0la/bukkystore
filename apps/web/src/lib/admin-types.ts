@@ -18,10 +18,16 @@ export type AdminOrderSummary = {
   id: string; order_number: string; customer_full_name: string; customer_phone: string;
   total_minor: number; currency: "NGN"; status: string; payment_status: string; created_at: string;
 };
+export type AdminRefund = {
+  id: string; payment_id: string; amount_minor: number; currency: "NGN"; reason: string;
+  status: "PENDING" | "SUCCESS" | "FAILED"; manual_reference: string | null;
+  created_at: string; completed_at: string | null;
+};
 export type AdminOrder = AdminOrderSummary & {
   customer_email: string | null; delivery_area_name: string; delivery_address: string;
   delivery_directions: string | null; subtotal_minor: number; delivery_fee_minor: number;
   items: Array<{ id: string; product_name: string; variant_name: string; sku: string;
     unit_price_minor: number; quantity: number; line_subtotal_minor: number }>;
+  refunds: AdminRefund[]; available_actions: string[];
 };
 export type AdminOrderPage = { items: AdminOrderSummary[] };

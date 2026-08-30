@@ -32,6 +32,9 @@ def test_openapi_operations_do_not_violate_the_contract(case: Case) -> None:
 
     protected_header_paths = {
         "/api/v1/admin/variants/{variant_id}/stock-adjustments": "contract-test-key",
+        "/api/v1/admin/orders/{order_id}/transitions": "contract-order-transition-key",
+        "/api/v1/admin/orders/{order_id}/cancellations": "contract-order-cancellation-key",
+        "/api/v1/admin/refunds/{refund_id}/complete": "contract-refund-completion-key",
         "/api/v1/checkout": "contract-checkout-key",
     }
     if case.operation.path in protected_header_paths:

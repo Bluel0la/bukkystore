@@ -1,16 +1,38 @@
 from __future__ import annotations
 
+import enum
 from datetime import datetime
 from typing import Annotated
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
-from bukkystore_api.commerce.models import OrderStatus, PaymentStatus
+from bukkystore_api.commerce.models import OrderStatus, PaymentStatus, RefundStatus
 
 
 class AdminOrderSchema(BaseModel):
     model_config = ConfigDict(extra="forbid")
+
+
+class OrderTransitionAction(enum.StrEnum):
+    START_PROCESSING = "START_PROCESSING"
+    MARK_OUT_FOR_DELIVERY = "MARK_OUT_FOR_DELIVERY"
+    MARK_COMPLETED = "MARK_COMPLETED"
+
+
+class OrderTransitionRequest(AdminOrderSchema):
+    action: OrderTransitionAction
+
+
+class OrderCancellationRequest(AdminOrderSchema):
+    reason: Annotated[str, StringConstraints(strip_whitespace=True, min_length=5, max_length=500)]
+
+
+class RefundCompletionRequest(AdminOrderSchema):
+    manual_reference: (
+        Annotated[str, StringConstraints(strip_whitespace=True, min_length=3, max_length=120)]
+        | None
+    ) = None
 
 
 class AdminOrderListQuery(AdminOrderSchema):
@@ -30,6 +52,18 @@ class AdminOrderItem(AdminOrderSchema):
     unit_price_minor: int
     quantity: int
     line_subtotal_minor: int
+
+
+class AdminRefundResponse(AdminOrderSchema):
+    id: UUID
+    payment_id: UUID
+    amount_minor: int
+    currency: str
+    reason: str
+    status: RefundStatus
+    manual_reference: str | None
+    created_at: datetime
+    completed_at: datetime | None
 
 
 class AdminOrderSummary(AdminOrderSchema):
@@ -52,6 +86,8 @@ class AdminOrderDetail(AdminOrderSummary):
     subtotal_minor: int
     delivery_fee_minor: int
     items: list[AdminOrderItem]
+    refunds: list[AdminRefundResponse]
+    available_actions: list[str]
 
 
 class AdminOrderPage(AdminOrderSchema):
