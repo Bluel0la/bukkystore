@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 
-const allowedPath = /^(auth\/(login|logout|me)|categories(?:\/[0-9a-f-]+)?|products(?:\/[0-9a-f-]+(?:\/(?:archive|images(?:\/signatures|\/reorder|\/[0-9a-f-]+(?:\/alt-text)?)?))?)?|orders(?:\/[0-9a-f-]+(?:\/(transitions|cancellations))?)?|refunds\/[0-9a-f-]+\/complete|variants\/[0-9a-f-]+\/stock-adjustments)$/;
+const allowedPath = /^(auth\/(login|logout|me)|categories(?:\/[0-9a-f-]+)?|products(?:\/[0-9a-f-]+(?:\/(?:archive|images(?:\/signatures|\/reorder|\/[0-9a-f-]+(?:\/alt-text)?)?))?)?|orders(?:\/[0-9a-f-]+(?:\/(transitions|cancellations))?)?|refunds\/[0-9a-f-]+\/complete|variants\/[0-9a-f-]+\/stock-adjustments|store-settings|delivery-areas(?:\/[0-9a-f-]+)?)$/;
 
 async function proxy(request: NextRequest, context: RouteContext<"/api/admin/[...path]">) {
   const { path } = await context.params;

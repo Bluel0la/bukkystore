@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 
-import type { AdminAnalyticsOverview, AdminOrder, AdminOrderPage, AdminProduct, AdminProductPage, AdminUser } from "@/lib/admin-types";
+import type { AdminAnalyticsOverview, AdminDeliveryArea, AdminOrder, AdminOrderPage, AdminProduct, AdminProductPage, AdminStoreSettings, AdminUser, ProductEngagement } from "@/lib/admin-types";
 import type { Category } from "@/lib/catalogue";
 
 function internalUrl(path: string): string {
@@ -10,16 +10,24 @@ function internalUrl(path: string): string {
 
 export async function adminRequest<T>(path: string): Promise<T | null> {
   const cookieStore = await cookies();
-  const response = await fetch(internalUrl(path), {
-    cache: "no-store",
-    headers: {
-      accept: "application/json",
-      cookie: cookieStore.toString(),
-    },
-  });
-  if (response.status === 401) return null;
-  if (!response.ok) throw new Error("Admin service unavailable");
-  return (await response.json()) as T;
+  try {
+    const response = await fetch(internalUrl(path), {
+      cache: "no-store",
+      headers: {
+        accept: "application/json",
+        cookie: cookieStore.toString(),
+      },
+    });
+    if (response.status === 401 || response.status === 403) return null;
+    if (!response.ok) {
+      console.warn(`[admin] ${path} responded ${response.status}`);
+      return null;
+    }
+    return (await response.json()) as T;
+  } catch (error) {
+    console.warn(`[admin] ${path} fetch failed:`, error instanceof Error ? error.message : error);
+    return null;
+  }
 }
 
 export function getAdminUser(): Promise<AdminUser | null> {
@@ -48,4 +56,18 @@ export function getAdminOrder(orderId: string): Promise<AdminOrder | null> {
 
 export function getAdminAnalytics(days = 30): Promise<AdminAnalyticsOverview | null> {
   return adminRequest<AdminAnalyticsOverview>(`/analytics/overview?days=${days}`);
+}
+
+export function getAdminStoreSettings(): Promise<AdminStoreSettings | null> {
+  return adminRequest<AdminStoreSettings>("/store-settings");
+}
+
+export function getAdminDeliveryAreas(): Promise<AdminDeliveryArea[] | null> {
+  return adminRequest<AdminDeliveryArea[]>("/delivery-areas");
+}
+
+export function getProductEngagement(productId: string, days = 30): Promise<ProductEngagement | null> {
+  return adminRequest<ProductEngagement>(
+    `/analytics/products/${encodeURIComponent(productId)}?days=${days}`,
+  );
 }

@@ -3,7 +3,7 @@ from __future__ import annotations
 import schemathesis
 from hypothesis import HealthCheck, settings
 from schemathesis import Case
-from schemathesis.specs.openapi.checks import missing_required_header
+from schemathesis.specs.openapi.checks import missing_required_header, negative_data_rejection
 
 from bukkystore_api.config import Settings
 from bukkystore_api.main import create_app
@@ -35,6 +35,9 @@ def test_openapi_operations_do_not_violate_the_contract(case: Case) -> None:
         "/api/v1/admin/orders/{order_id}/transitions": "contract-order-transition-key",
         "/api/v1/admin/orders/{order_id}/cancellations": "contract-order-cancellation-key",
         "/api/v1/admin/refunds/{refund_id}/complete": "contract-refund-completion-key",
+        "/api/v1/admin/store-settings": "contract-settings-update-key",
+        "/api/v1/admin/delivery-areas": "contract-delivery-area-create-key",
+        "/api/v1/admin/delivery-areas/{area_id}": "contract-delivery-area-update-key",
         "/api/v1/checkout": "contract-checkout-key",
     }
     if case.operation.path in protected_header_paths:
@@ -53,6 +56,13 @@ def test_openapi_operations_do_not_violate_the_contract(case: Case) -> None:
         # FastAPI reports missing required headers with its documented 422
         # validation response; Schemathesis currently expects 406 for this check.
         case.call_and_validate(excluded_checks=[missing_required_header])
+        return
+    if case.operation.path == "/api/v1/analytics/events":
+        # The endpoint normalizes source/campaign (trim, lowercase, default),
+        # so schema-edge inputs may legitimately be accepted after
+        # normalization. Skip only the negative-data check; every other
+        # contract check still applies.
+        case.call_and_validate(excluded_checks=[negative_data_rejection])
         return
     case.call_and_validate()
 

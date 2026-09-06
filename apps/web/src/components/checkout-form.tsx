@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { useCart } from "@/components/cart-provider";
+import { captureAttribution, loadAttribution } from "@/lib/attribution";
 import { formatNaira } from "@/lib/catalogue";
 import type { CheckoutResponse, DeliveryArea } from "@/lib/commerce-types";
 
@@ -23,10 +24,15 @@ export function CheckoutForm({
   const area = areas.find((item) => item.id === areaId);
   const subtotal = cart.items.reduce((sum, item) => sum + item.priceMinor * item.quantity, 0);
 
+  useEffect(() => {
+    captureAttribution();
+  }, []);
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!cart.items.length || !areaId) return;
     const form = new FormData(event.currentTarget);
+    const attribution = loadAttribution();
     const payload = {
       customer: {
         full_name: String(form.get("fullName") ?? ""),
@@ -39,6 +45,7 @@ export function CheckoutForm({
         directions: String(form.get("directions") ?? "") || null,
       },
       items: cart.items.map((item) => ({ variant_id: item.variantId, quantity: item.quantity })),
+      attribution: { source: attribution.source, campaign: attribution.campaign },
     };
     const serialized = JSON.stringify(payload);
     if (!idempotencyKey.current || previousPayload.current !== serialized) {

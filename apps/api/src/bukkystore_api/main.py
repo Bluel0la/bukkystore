@@ -13,6 +13,9 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from bukkystore_api.admin_analytics.router import router as admin_analytics_router
 from bukkystore_api.admin_catalogue.router import router as admin_catalogue_router
 from bukkystore_api.admin_orders.router import router as admin_orders_router
+from bukkystore_api.admin_settings.router import public_router as store_settings_public_router
+from bukkystore_api.admin_settings.router import router as admin_settings_router
+from bukkystore_api.analytics.router import router as analytics_router
 from bukkystore_api.api import router
 from bukkystore_api.auth.router import router as auth_router
 from bukkystore_api.catalogue.router import router as catalogue_router
@@ -51,8 +54,8 @@ def create_app(
             logger.info("application_stopped")
 
     app = FastAPI(
-        title="Bukky Store API",
-        summary="Authoritative commerce API for the Bukky Store storefront and admin.",
+        title="Atiten Kids Store API",
+        summary="Authoritative commerce API for the Atiten Kids Store storefront and admin.",
         version="0.1.0",
         lifespan=lifespan,
         docs_url="/api/docs" if resolved_settings.environment != "production" else None,
@@ -73,6 +76,9 @@ def create_app(
     app.include_router(admin_catalogue_router)
     app.include_router(admin_analytics_router)
     app.include_router(admin_orders_router)
+    app.include_router(admin_settings_router)
+    app.include_router(store_settings_public_router)
+    app.include_router(analytics_router)
     app.include_router(commerce_router)
 
     @app.exception_handler(ApiError)

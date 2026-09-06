@@ -7,6 +7,8 @@ from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
+from bukkystore_api.admin_settings import models as admin_settings_models  # noqa: F401
+from bukkystore_api.analytics import models as analytics_models  # noqa: F401
 from bukkystore_api.auth import models as auth_models  # noqa: F401
 from bukkystore_api.catalogue import models as catalogue_models  # noqa: F401
 from bukkystore_api.commerce import models as commerce_models  # noqa: F401

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { AdminOrderActions } from "@/components/admin-order-actions";
-import { getAdminOrder, getAdminUser } from "@/lib/admin";
+import { getAdminOrder, getAdminStoreSettings, getAdminUser } from "@/lib/admin";
 import { formatNaira } from "@/lib/catalogue";
 
 function whatsappNumber(phone: string): string {
@@ -12,10 +12,11 @@ function whatsappNumber(phone: string): string {
 
 export default async function AdminOrderPage(props: PageProps<"/admin/orders/[id]">) {
   const { id } = await props.params;
-  const [user, order] = await Promise.all([getAdminUser(), getAdminOrder(id)]);
+  const [user, order, settings] = await Promise.all([getAdminUser(), getAdminOrder(id), getAdminStoreSettings()]);
   if (!user || !order) redirect("/admin/login");
+  const storeName = settings?.store_name ?? "Atiten Kids Store";
   const whatsappMessage = encodeURIComponent(
-    `Hello ${order.customer_full_name}, I am contacting you from Bukky Store about order ${order.order_number}.`,
+    `Hello ${order.customer_full_name}, I am contacting you from ${storeName} about order ${order.order_number}.`,
   );
 
   return (

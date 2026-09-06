@@ -1,7 +1,7 @@
 {
   "info": {
-    "name": "Bukky Store API",
-    "description": "Contract checks kept in sync with the Bukky Store OpenAPI document.",
+    "name": "Atiten Kids Store API",
+    "description": "Contract checks kept in sync with the Atiten Kids Store OpenAPI document.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -15,8 +15,15 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/v1/health/live",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "health", "live"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "health",
+                "live"
+              ]
             },
             "description": "Confirms that the API process can serve requests."
           },
@@ -52,55 +59,116 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": { "raw": "{{base_url}}/api/v1/categories", "host": ["{{base_url}}"], "path": ["api", "v1", "categories"] },
+            "url": {
+              "raw": "{{base_url}}/api/v1/categories",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "categories"
+              ]
+            },
             "description": "Returns active store categories in display order."
           },
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
-            "pm.test('returns seeded categories', function () {",
-            "  const body = pm.response.json();",
-            "  pm.expect(body).to.be.an('array').that.is.not.empty;",
-            "  pm.expect(body.map(item => item.slug)).to.include('dresses');",
-            "});"
-          ] } }]
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('returns seeded categories', function () {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body).to.be.an('array').that.is.not.empty;",
+                  "  pm.expect(body.map(item => item.slug)).to.include('dresses');",
+                  "});"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Browse products",
           "request": {
             "method": "GET",
             "header": [],
-            "url": { "raw": "{{base_url}}/api/v1/products?limit=10", "host": ["{{base_url}}"], "path": ["api", "v1", "products"], "query": [{ "key": "limit", "value": "10" }] },
+            "url": {
+              "raw": "{{base_url}}/api/v1/products?limit=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "products"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
             "description": "Returns cursor-paginated active products with derived availability."
           },
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
-            "pm.test('does not expose exact stock', function () {",
-            "  const body = pm.response.json();",
-            "  pm.expect(body).to.have.all.keys('items', 'next_cursor');",
-            "  pm.expect(body.items.map(item => item.slug)).to.include('brown-linen-dress');",
-            "  pm.expect(body.items[0]).not.to.have.property('stock_on_hand');",
-            "});"
-          ] } }]
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('does not expose exact stock', function () {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body).to.have.all.keys('items', 'next_cursor');",
+                  "  pm.expect(body.items.map(item => item.slug)).to.include('brown-linen-dress');",
+                  "  pm.expect(body.items[0]).not.to.have.property('stock_on_hand');",
+                  "});"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Get product detail",
           "request": {
             "method": "GET",
             "header": [],
-            "url": { "raw": "{{base_url}}/api/v1/products/brown-linen-dress", "host": ["{{base_url}}"], "path": ["api", "v1", "products", "brown-linen-dress"] },
+            "url": {
+              "raw": "{{base_url}}/api/v1/products/brown-linen-dress",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "products",
+                "brown-linen-dress"
+              ]
+            },
             "description": "Returns selectable colour-and-size variants for one active product."
           },
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
-            "pm.test('returns variant availability', function () {",
-            "  const body = pm.response.json();",
-            "  pm.expect(body.slug).to.eql('brown-linen-dress');",
-            "  pm.expect(body.variants).to.be.an('array').that.is.not.empty;",
-            "  pm.expect(body.variants[0]).to.have.property('available');",
-            "  const available = body.variants.find(variant => variant.available);",
-            "  if (available) { pm.collectionVariables.set('checkout_variant_id', available.id); }",
-            "});"
-          ] } }]
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('returns variant availability', function () {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.slug).to.eql('brown-linen-dress');",
+                  "  pm.expect(body.variants).to.be.an('array').that.is.not.empty;",
+                  "  pm.expect(body.variants[0]).to.have.property('available');",
+                  "  const available = body.variants.find(variant => variant.available);",
+                  "  if (available) { pm.collectionVariables.set('checkout_variant_id', available.id); }",
+                  "});"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
@@ -108,94 +176,266 @@
       "name": "Commerce",
       "item": [
         {
+          "name": "Get public store information",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/store-settings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "store-settings"
+              ]
+            },
+            "description": "Returns the safe business details every storefront surface needs."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('returns the storefront identity', function () { const body = pm.response.json(); pm.expect(body.store_name).to.eql('Atiten Kids Store'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Record analytics event",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event_type\": \"product_view\",\n  \"session_id\": \"postman-session-01\",\n  \"source\": \"direct\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/analytics/events",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "analytics",
+                "events"
+              ]
+            },
+            "description": "Records one best-effort storefront analytics event."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns HTTP 201', function () { pm.response.to.have.status(201); });",
+                  "pm.test('accepts the event', function () { pm.expect(pm.response.json().event_type).to.eql('product_view'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "List delivery areas",
           "request": {
             "method": "GET",
             "header": [],
-            "url": { "raw": "{{base_url}}/api/v1/delivery-areas", "host": ["{{base_url}}"], "path": ["api", "v1", "delivery-areas"] },
+            "url": {
+              "raw": "{{base_url}}/api/v1/delivery-areas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "delivery-areas"
+              ]
+            },
             "description": "Returns active Lagos delivery areas and server-owned fees."
           },
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
-            "pm.test('returns a configured delivery area', function () {",
-            "  const body = pm.response.json();",
-            "  pm.expect(body).to.be.an('array').that.is.not.empty;",
-            "  pm.collectionVariables.set('checkout_area_id', body[0].id);",
-            "});"
-          ] } }]
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('returns a configured delivery area', function () {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body).to.be.an('array').that.is.not.empty;",
+                  "  pm.collectionVariables.set('checkout_area_id', body[0].id);",
+                  "});"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Reject unavailable delivery area",
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Idempotency-Key", "value": "postman-safe-rejection-{{$guid}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "postman-safe-rejection-{{$guid}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"customer\": {\n    \"full_name\": \"Postman Checkout\",\n    \"phone\": \"08012345678\"\n  },\n  \"delivery\": {\n    \"area_id\": \"00000000-0000-0000-0000-000000000000\",\n    \"address\": \"12 Contract Test Street, Lagos\"\n  },\n  \"items\": [\n    {\n      \"variant_id\": \"{{checkout_variant_id}}\",\n      \"quantity\": 1\n    }\n  ]\n}"
             },
-            "url": { "raw": "{{base_url}}/api/v1/checkout", "host": ["{{base_url}}"], "path": ["api", "v1", "checkout"] },
+            "url": {
+              "raw": "{{base_url}}/api/v1/checkout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "checkout"
+              ]
+            },
             "description": "Exercises checkout validation without creating an order in the configured database."
           },
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('returns HTTP 404', function () { pm.response.to.have.status(404); });",
-            "pm.test('returns the safe delivery error', function () { pm.expect(pm.response.json().code).to.eql('delivery_area_not_found'); });"
-          ] } }]
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns HTTP 404', function () { pm.response.to.have.status(404); });",
+                  "pm.test('returns the safe delivery error', function () { pm.expect(pm.response.json().code).to.eql('delivery_area_not_found'); });"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Create checkout order",
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Idempotency-Key", "value": "postman-checkout-{{$guid}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "postman-checkout-{{$guid}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"customer\": {\n    \"full_name\": \"Postman Checkout\",\n    \"phone\": \"08012345678\",\n    \"email\": \"postman@bukkystore.invalid\"\n  },\n  \"delivery\": {\n    \"area_id\": \"{{checkout_area_id}}\",\n    \"address\": \"12 Contract Test Street, Lagos\",\n    \"directions\": \"Postman integration test\"\n  },\n  \"items\": [\n    {\n      \"variant_id\": \"{{checkout_variant_id}}\",\n      \"quantity\": 1\n    }\n  ],\n  \"attribution\": {\n    \"source\": \"postman\",\n    \"campaign\": \"contract-gate\"\n  }\n}"
             },
-            "url": { "raw": "{{base_url}}/api/v1/checkout", "host": ["{{base_url}}"], "path": ["api", "v1", "checkout"] },
+            "url": {
+              "raw": "{{base_url}}/api/v1/checkout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "checkout"
+              ]
+            },
             "description": "Creates an awaiting-payment guest order, reserves exact variant stock, and initializes the configured payment provider."
           },
           "event": [
-            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
-              "if (String(pm.environment.get('run_checkout_write')).toLowerCase() !== 'true') { pm.execution.skipRequest(); }"
-            ] } },
-            { "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('returns HTTP 201', function () { pm.response.to.have.status(201); });",
-            "pm.test('returns server-calculated totals and payment handoff', function () {",
-            "  const body = pm.response.json();",
-            "  pm.expect(body.order_status).to.eql('AWAITING_PAYMENT');",
-            "  pm.expect(body.payment_status).to.eql('PENDING');",
-            "  pm.expect(body.summary.total_minor).to.eql(body.summary.subtotal_minor + body.summary.delivery_fee_minor);",
-            "  pm.expect(body.payment_url).to.be.a('string').that.is.not.empty;",
-            "  pm.collectionVariables.set('postman_order_number', body.order_number);",
-            "  pm.collectionVariables.set('postman_order_access_token', body.order_access_token);",
-            "});"
-          ] } }]
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (String(pm.environment.get('run_checkout_write')).toLowerCase() !== 'true') { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns HTTP 201', function () { pm.response.to.have.status(201); });",
+                  "pm.test('returns server-calculated totals and payment handoff', function () {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.order_status).to.eql('AWAITING_PAYMENT');",
+                  "  pm.expect(body.payment_status).to.eql('PENDING');",
+                  "  pm.expect(body.summary.total_minor).to.eql(body.summary.subtotal_minor + body.summary.delivery_fee_minor);",
+                  "  pm.expect(body.payment_url).to.be.a('string').that.is.not.empty;",
+                  "  pm.collectionVariables.set('postman_order_number', body.order_number);",
+                  "  pm.collectionVariables.set('postman_order_access_token', body.order_access_token);",
+                  "});"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Confirm fake payment",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"order_number\": \"{{postman_order_number}}\",\n  \"order_access_token\": \"{{postman_order_access_token}}\"\n}"
             },
-            "url": { "raw": "{{base_url}}/api/v1/payments/fake/confirm", "host": ["{{base_url}}"], "path": ["api", "v1", "payments", "fake", "confirm"] },
+            "url": {
+              "raw": "{{base_url}}/api/v1/payments/fake/confirm",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "payments",
+                "fake",
+                "confirm"
+              ]
+            },
             "description": "Development-only confirmation using server-owned payment values and the idempotent stock transaction."
           },
           "event": [
-            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
-              "if (String(pm.environment.get('run_checkout_write')).toLowerCase() !== 'true') { pm.execution.skipRequest(); }"
-            ] } },
-            { "listen": "test", "script": { "type": "text/javascript", "exec": [
-              "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
-              "pm.test('confirms payment and order', function () { const body = pm.response.json(); pm.expect(body.payment_status).to.eql('SUCCESS'); pm.expect(['CONFIRMED', 'REFUND_REQUIRED']).to.include(body.order_status); });"
-            ] } }
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (String(pm.environment.get('run_checkout_write')).toLowerCase() !== 'true') { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('confirms payment and order', function () { const body = pm.response.json(); pm.expect(body.payment_status).to.eql('SUCCESS'); pm.expect(['CONFIRMED', 'REFUND_REQUIRED']).to.include(body.order_status); });"
+                ]
+              }
+            }
           ]
         },
         {
@@ -203,17 +443,47 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": { "raw": "{{base_url}}/api/v1/orders/{{postman_order_number}}/payment-status?token={{postman_order_access_token}}", "host": ["{{base_url}}"], "path": ["api", "v1", "orders", "{{postman_order_number}}", "payment-status"], "query": [{ "key": "token", "value": "{{postman_order_access_token}}" }] },
+            "url": {
+              "raw": "{{base_url}}/api/v1/orders/{{postman_order_number}}/payment-status?token={{postman_order_access_token}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders",
+                "{{postman_order_number}}",
+                "payment-status"
+              ],
+              "query": [
+                {
+                  "key": "token",
+                  "value": "{{postman_order_access_token}}"
+                }
+              ]
+            },
             "description": "Reads a guest order's payment-safe summary using its private access token."
           },
           "event": [
-            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
-              "if (String(pm.environment.get('run_checkout_write')).toLowerCase() !== 'true') { pm.execution.skipRequest(); }"
-            ] } },
-            { "listen": "test", "script": { "type": "text/javascript", "exec": [
-              "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
-              "pm.test('returns the same order', function () { pm.expect(pm.response.json().order_number).to.eql(pm.collectionVariables.get('postman_order_number')); });"
-            ] } }
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (String(pm.environment.get('run_checkout_write')).toLowerCase() !== 'true') { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('returns the same order', function () { pm.expect(pm.response.json().order_number).to.eql(pm.collectionVariables.get('postman_order_number')); });"
+                ]
+              }
+            }
           ]
         }
       ]
@@ -221,82 +491,212 @@
     {
       "name": "Admin",
       "description": "Cookie-authenticated catalogue operations. Login captures the CSRF cookie for mutating requests.",
-      "event": [{ "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
-        "if (!pm.environment.get('admin_email') || !pm.environment.get('admin_password')) { pm.execution.skipRequest(); }"
-      ] } }],
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.environment.get('admin_email') || !pm.environment.get('admin_password')) { pm.execution.skipRequest(); }"
+            ]
+          }
+        }
+      ],
       "item": [
         {
           "name": "Login",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{admin_password}}\"\n}"
             },
-            "url": { "raw": "{{base_url}}/api/v1/admin/auth/login", "host": ["{{base_url}}"], "path": ["api", "v1", "admin", "auth", "login"] },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "auth",
+                "login"
+              ]
+            },
             "description": "Creates an expiring server-side admin session. Credentials are injected as secret environment values."
           },
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
-            "pm.test('returns the authenticated user', function () { pm.expect(pm.response.json().user).to.have.all.keys('id', 'email', 'display_name', 'role'); });",
-            "const cookies = pm.response.headers.all().filter(header => header.key.toLowerCase() === 'set-cookie').map(header => header.value).join(';');",
-            "const csrf = cookies.match(/bukky_admin_csrf=([^;]+)/);",
-            "if (csrf) { pm.collectionVariables.set('csrf_token', decodeURIComponent(csrf[1])); }"
-          ] } }]
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('returns the authenticated user', function () { pm.expect(pm.response.json().user).to.have.all.keys('id', 'email', 'display_name', 'role'); });",
+                  "const cookies = pm.response.headers.all().filter(header => header.key.toLowerCase() === 'set-cookie').map(header => header.value).join(';');",
+                  "const csrf = cookies.match(/bukky_admin_csrf=([^;]+)/);",
+                  "if (csrf) { pm.collectionVariables.set('csrf_token', decodeURIComponent(csrf[1])); }"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Current admin",
           "request": {
             "method": "GET",
             "header": [],
-            "url": { "raw": "{{base_url}}/api/v1/admin/auth/me", "host": ["{{base_url}}"], "path": ["api", "v1", "admin", "auth", "me"] },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/auth/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "auth",
+                "me"
+              ]
+            },
             "description": "Resolves the current active admin session."
           },
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });"] } }]
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "List admin categories",
           "request": {
             "method": "GET",
             "header": [],
-            "url": { "raw": "{{base_url}}/api/v1/admin/categories", "host": ["{{base_url}}"], "path": ["api", "v1", "admin", "categories"] },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/categories",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "categories"
+              ]
+            },
             "description": "Returns active and inactive categories for management. POST and PATCH use the same resource with the CSRF header."
           },
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
-            "pm.test('returns categories', function () { pm.expect(pm.response.json()).to.be.an('array').that.is.not.empty; });"
-          ] } }]
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('returns categories', function () { pm.expect(pm.response.json()).to.be.an('array').that.is.not.empty; });"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "List admin products",
           "request": {
             "method": "GET",
             "header": [],
-            "url": { "raw": "{{base_url}}/api/v1/admin/products?limit=10", "host": ["{{base_url}}"], "path": ["api", "v1", "admin", "products"], "query": [{ "key": "limit", "value": "10" }] },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/products?limit=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "products"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
             "description": "Returns exact stock and reservation counts for catalogue management. POST creates a product; GET/PATCH by UUID edit it; the archive action performs archival."
           },
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
-            "pm.test('returns exact inventory', function () { const body = pm.response.json(); pm.expect(body.items).to.be.an('array').that.is.not.empty; pm.expect(body.items[0].variants[0]).to.have.property('stock_on_hand'); });"
-          ] } }]
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('returns exact inventory', function () { const body = pm.response.json(); pm.expect(body.items).to.be.an('array').that.is.not.empty; pm.expect(body.items[0].variants[0]).to.have.property('stock_on_hand'); });"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Create product photo upload signature",
           "request": {
             "method": "POST",
-            "header": [{ "key": "X-CSRF-Token", "value": "{{csrf_token}}" }],
-            "url": { "raw": "{{base_url}}/api/v1/admin/products/{{admin_product_id}}/images/signatures", "host": ["{{base_url}}"], "path": ["api", "v1", "admin", "products", "{{admin_product_id}}", "images", "signatures"] },
+            "header": [
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/products/{{admin_product_id}}/images/signatures",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "products",
+                "{{admin_product_id}}",
+                "images",
+                "signatures"
+              ]
+            },
             "description": "Creates a short-lived, product-scoped signed direct-upload request without returning the Cloudinary API secret. Disabled by default."
           },
           "event": [
-            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
-              "if (String(pm.environment.get('run_photography_write')).toLowerCase() !== 'true' || !pm.environment.get('admin_product_id')) { pm.execution.skipRequest(); }"
-            ] } },
-            { "listen": "test", "script": { "type": "text/javascript", "exec": [
-              "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
-              "pm.test('does not expose the API secret', function () { const body = pm.response.json(); pm.expect(body).to.have.property('signature_algorithm', 'sha256'); pm.expect(body).not.to.have.property('api_secret'); });"
-            ] } }
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (String(pm.environment.get('run_photography_write')).toLowerCase() !== 'true' || !pm.environment.get('admin_product_id')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('does not expose the API secret', function () { const body = pm.response.json(); pm.expect(body).to.have.property('signature_algorithm', 'sha256'); pm.expect(body).not.to.have.property('api_secret'); });"
+                ]
+              }
+            }
           ]
         },
         {
@@ -304,21 +704,55 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf_token}}"
+              }
             ],
-            "body": { "mode": "raw", "raw": "{\n  \"public_id\": \"{{cloudinary_public_id}}\",\n  \"version\": {{cloudinary_version}},\n  \"signature\": \"{{cloudinary_response_signature}}\",\n  \"width\": 1200,\n  \"height\": 1500,\n  \"bytes\": 500000,\n  \"format\": \"jpg\",\n  \"alt_text\": \"Product front view\"\n}" },
-            "url": { "raw": "{{base_url}}/api/v1/admin/products/{{admin_product_id}}/images", "host": ["{{base_url}}"], "path": ["api", "v1", "admin", "products", "{{admin_product_id}}", "images"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"public_id\": \"{{cloudinary_public_id}}\",\n  \"version\": {{cloudinary_version}},\n  \"signature\": \"{{cloudinary_response_signature}}\",\n  \"width\": 1200,\n  \"height\": 1500,\n  \"bytes\": 500000,\n  \"format\": \"jpg\",\n  \"alt_text\": \"Product front view\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/products/{{admin_product_id}}/images",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "products",
+                "{{admin_product_id}}",
+                "images"
+              ]
+            },
             "description": "Verifies Cloudinary's response signature and registers trusted photo metadata. Supply values from a completed direct upload. Disabled by default."
           },
           "event": [
-            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
-              "if (String(pm.environment.get('run_photography_write')).toLowerCase() !== 'true' || !pm.environment.get('cloudinary_response_signature')) { pm.execution.skipRequest(); }"
-            ] } },
-            { "listen": "test", "script": { "type": "text/javascript", "exec": [
-              "pm.test('returns HTTP 201', function () { pm.response.to.have.status(201); });",
-              "pm.test('returns trusted metadata', function () { const body = pm.response.json(); pm.expect(body.url.startsWith('https://res.cloudinary.com/')).to.eql(true); pm.environment.set('admin_product_image_id', body.id); });"
-            ] } }
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (String(pm.environment.get('run_photography_write')).toLowerCase() !== 'true' || !pm.environment.get('cloudinary_response_signature')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns HTTP 201', function () { pm.response.to.have.status(201); });",
+                  "pm.test('returns trusted metadata', function () { const body = pm.response.json(); pm.expect(body.url.startsWith('https://res.cloudinary.com/')).to.eql(true); pm.environment.set('admin_product_image_id', body.id); });"
+                ]
+              }
+            }
           ]
         },
         {
@@ -326,18 +760,56 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf_token}}"
+              }
             ],
-            "body": { "mode": "raw", "raw": "{\n  \"alt_text\": \"Product front view\"\n}" },
-            "url": { "raw": "{{base_url}}/api/v1/admin/products/{{admin_product_id}}/images/{{admin_product_image_id}}/alt-text", "host": ["{{base_url}}"], "path": ["api", "v1", "admin", "products", "{{admin_product_id}}", "images", "{{admin_product_image_id}}", "alt-text"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"alt_text\": \"Product front view\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/products/{{admin_product_id}}/images/{{admin_product_image_id}}/alt-text",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "products",
+                "{{admin_product_id}}",
+                "images",
+                "{{admin_product_image_id}}",
+                "alt-text"
+              ]
+            },
             "description": "Updates the customer-facing accessible description for one product photo. Disabled by default."
           },
           "event": [
-            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
-              "if (String(pm.environment.get('run_photography_write')).toLowerCase() !== 'true' || !pm.environment.get('admin_product_image_id')) { pm.execution.skipRequest(); }"
-            ] } },
-            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });"] } }
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (String(pm.environment.get('run_photography_write')).toLowerCase() !== 'true' || !pm.environment.get('admin_product_image_id')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
           ]
         },
         {
@@ -345,33 +817,103 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf_token}}"
+              }
             ],
-            "body": { "mode": "raw", "raw": "{\n  \"image_ids\": [\"{{admin_product_image_id}}\"]\n}" },
-            "url": { "raw": "{{base_url}}/api/v1/admin/products/{{admin_product_id}}/images/reorder", "host": ["{{base_url}}"], "path": ["api", "v1", "admin", "products", "{{admin_product_id}}", "images", "reorder"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"image_ids\": [\"{{admin_product_image_id}}\"]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/products/{{admin_product_id}}/images/reorder",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "products",
+                "{{admin_product_id}}",
+                "images",
+                "reorder"
+              ]
+            },
             "description": "Replaces the complete display order. This one-photo contract example is disabled by default."
           },
           "event": [
-            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
-              "if (String(pm.environment.get('run_photography_write')).toLowerCase() !== 'true' || !pm.environment.get('admin_product_image_id')) { pm.execution.skipRequest(); }"
-            ] } },
-            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });"] } }
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (String(pm.environment.get('run_photography_write')).toLowerCase() !== 'true' || !pm.environment.get('admin_product_image_id')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
           ]
         },
         {
           "name": "Remove product photo",
           "request": {
             "method": "DELETE",
-            "header": [{ "key": "X-CSRF-Token", "value": "{{csrf_token}}" }],
-            "url": { "raw": "{{base_url}}/api/v1/admin/products/{{admin_product_id}}/images/{{admin_product_image_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "admin", "products", "{{admin_product_id}}", "images", "{{admin_product_image_id}}"] },
+            "header": [
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/products/{{admin_product_id}}/images/{{admin_product_image_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "products",
+                "{{admin_product_id}}",
+                "images",
+                "{{admin_product_image_id}}"
+              ]
+            },
             "description": "Removes the provider asset before deleting catalogue metadata. Disabled by default because it is destructive."
           },
           "event": [
-            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
-              "if (String(pm.environment.get('run_photography_write')).toLowerCase() !== 'true' || !pm.environment.get('admin_product_image_id')) { pm.execution.skipRequest(); }"
-            ] } },
-            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });"] } }
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (String(pm.environment.get('run_photography_write')).toLowerCase() !== 'true' || !pm.environment.get('admin_product_image_id')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
           ]
         },
         {
@@ -379,48 +921,185 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": { "raw": "{{base_url}}/api/v1/admin/orders?limit=10", "host": ["{{base_url}}"], "path": ["api", "v1", "admin", "orders"], "query": [{ "key": "limit", "value": "10" }] },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/orders?limit=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "orders"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
             "description": "Returns recent orders with payment state for fulfilment. GET by UUID returns delivery and immutable line-item detail."
           },
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
-            "pm.test('returns an order page', function () { pm.expect(pm.response.json()).to.have.property('items').that.is.an('array'); });"
-          ] } }]
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('returns an order page', function () { pm.expect(pm.response.json()).to.have.property('items').that.is.an('array'); });"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Get operations analytics",
           "request": {
             "method": "GET",
             "header": [],
-            "url": { "raw": "{{base_url}}/api/v1/admin/analytics/overview?days=30", "host": ["{{base_url}}"], "path": ["api", "v1", "admin", "analytics", "overview"], "query": [{ "key": "days", "value": "30" }] },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/analytics/overview?days=30",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "analytics",
+                "overview"
+              ],
+              "query": [
+                {
+                  "key": "days",
+                  "value": "30"
+                }
+              ]
+            },
             "description": "Returns bounded sales, fulfilment, refund, low-stock, top-product, and checkout-source metrics for the operations dashboard."
           },
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
-            "pm.test('returns the operations snapshot', function () { const body = pm.response.json(); pm.expect(body).to.have.property('range_days', 30); pm.expect(body.top_products).to.be.an('array'); pm.expect(body.sources).to.be.an('array'); });"
-          ] } }]
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('returns the operations snapshot', function () { const body = pm.response.json(); pm.expect(body).to.have.property('range_days', 30); pm.expect(body.top_products).to.be.an('array'); pm.expect(body.sources).to.be.an('array'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get product engagement",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/analytics/products/{{admin_product_id}}?days=30",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "analytics",
+                "products",
+                "{{admin_product_id}}"
+              ],
+              "query": [
+                {
+                  "key": "days",
+                  "value": "30"
+                }
+              ]
+            },
+            "description": "Returns bounded views, shares, and WhatsApp clicks for one product."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('admin_product_id')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('returns engagement counts', function () { const body = pm.response.json(); pm.expect(body).to.have.property('views'); pm.expect(body).to.have.property('whatsapp_clicks'); });"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Start order processing",
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "X-CSRF-Token", "value": "{{csrf_token}}" },
-              { "key": "Idempotency-Key", "value": "postman-transition-{{$guid}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf_token}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "postman-transition-{{$guid}}"
+              }
             ],
-            "body": { "mode": "raw", "raw": "{\n  \"action\": \"START_PROCESSING\"\n}" },
-            "url": { "raw": "{{base_url}}/api/v1/admin/orders/{{admin_order_id}}/transitions", "host": ["{{base_url}}"], "path": ["api", "v1", "admin", "orders", "{{admin_order_id}}", "transitions"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"START_PROCESSING\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/orders/{{admin_order_id}}/transitions",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "orders",
+                "{{admin_order_id}}",
+                "transitions"
+              ]
+            },
             "description": "Advances one paid CONFIRMED order to PROCESSING. Disabled by default because it mutates live order state."
           },
           "event": [
-            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
-              "if (String(pm.environment.get('run_order_operations_write')).toLowerCase() !== 'true' || !pm.environment.get('admin_order_id')) { pm.execution.skipRequest(); }"
-            ] } },
-            { "listen": "test", "script": { "type": "text/javascript", "exec": [
-              "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
-              "pm.test('moves order to processing', function () { pm.expect(pm.response.json().status).to.eql('PROCESSING'); });"
-            ] } }
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (String(pm.environment.get('run_order_operations_write')).toLowerCase() !== 'true' || !pm.environment.get('admin_order_id')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('moves order to processing', function () { pm.expect(pm.response.json().status).to.eql('PROCESSING'); });"
+                ]
+              }
+            }
           ]
         },
         {
@@ -428,22 +1107,59 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "X-CSRF-Token", "value": "{{csrf_token}}" },
-              { "key": "Idempotency-Key", "value": "postman-cancellation-{{$guid}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf_token}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "postman-cancellation-{{$guid}}"
+              }
             ],
-            "body": { "mode": "raw", "raw": "{\n  \"reason\": \"Cancelled by the Postman contract run\"\n}" },
-            "url": { "raw": "{{base_url}}/api/v1/admin/orders/{{admin_order_id}}/cancellations", "host": ["{{base_url}}"], "path": ["api", "v1", "admin", "orders", "{{admin_order_id}}", "cancellations"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Cancelled by the Postman contract run\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/orders/{{admin_order_id}}/cancellations",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "orders",
+                "{{admin_order_id}}",
+                "cancellations"
+              ]
+            },
             "description": "Cancels one eligible order and performs the appropriate reservation, stock, and refund effects exactly once. Disabled by default."
           },
           "event": [
-            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
-              "if (String(pm.environment.get('run_order_operations_write')).toLowerCase() !== 'true' || !pm.environment.get('admin_order_id')) { pm.execution.skipRequest(); }"
-            ] } },
-            { "listen": "test", "script": { "type": "text/javascript", "exec": [
-              "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
-              "pm.test('cancels the order', function () { pm.expect(pm.response.json().status).to.eql('CANCELLED'); });"
-            ] } }
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (String(pm.environment.get('run_order_operations_write')).toLowerCase() !== 'true' || !pm.environment.get('admin_order_id')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('cancels the order', function () { pm.expect(pm.response.json().status).to.eql('CANCELLED'); });"
+                ]
+              }
+            }
           ]
         },
         {
@@ -451,33 +1167,336 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "X-CSRF-Token", "value": "{{csrf_token}}" },
-              { "key": "Idempotency-Key", "value": "postman-refund-{{$guid}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf_token}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "postman-refund-{{$guid}}"
+              }
             ],
-            "body": { "mode": "raw", "raw": "{\n  \"manual_reference\": \"POSTMAN-MANUAL-REFUND\"\n}" },
-            "url": { "raw": "{{base_url}}/api/v1/admin/refunds/{{admin_refund_id}}/complete", "host": ["{{base_url}}"], "path": ["api", "v1", "admin", "refunds", "{{admin_refund_id}}", "complete"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"manual_reference\": \"POSTMAN-MANUAL-REFUND\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/refunds/{{admin_refund_id}}/complete",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "refunds",
+                "{{admin_refund_id}}",
+                "complete"
+              ]
+            },
             "description": "Records that a pending manual refund was sent and marks its payment REFUNDED. Disabled by default."
           },
           "event": [
-            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
-              "if (String(pm.environment.get('run_order_operations_write')).toLowerCase() !== 'true' || !pm.environment.get('admin_refund_id')) { pm.execution.skipRequest(); }"
-            ] } },
-            { "listen": "test", "script": { "type": "text/javascript", "exec": [
-              "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
-              "pm.test('completes the refund', function () { pm.expect(pm.response.json().status).to.eql('SUCCESS'); });"
-            ] } }
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (String(pm.environment.get('run_order_operations_write')).toLowerCase() !== 'true' || !pm.environment.get('admin_refund_id')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('completes the refund', function () { pm.expect(pm.response.json().status).to.eql('SUCCESS'); });"
+                ]
+              }
+            }
           ]
         },
         {
           "name": "Logout",
           "request": {
             "method": "POST",
-            "header": [{ "key": "X-CSRF-Token", "value": "{{csrf_token}}" }],
-            "url": { "raw": "{{base_url}}/api/v1/admin/auth/logout", "host": ["{{base_url}}"], "path": ["api", "v1", "admin", "auth", "logout"] },
+            "header": [
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/auth/logout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "auth",
+                "logout"
+              ]
+            },
             "description": "Revokes the current session and clears both cookies."
           },
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('returns HTTP 204', function () { pm.response.to.have.status(204); });"] } }]
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns HTTP 204', function () { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get business settings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/store-settings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "store-settings"
+              ]
+            },
+            "description": "Returns the full business configuration for the admin settings screen."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('returns Atiten Kids Store', function () { const body = pm.response.json(); pm.expect(body.store_name).to.eql('Atiten Kids Store'); pm.expect(body.whatsapp_number).to.eql('+2348121531909'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update business settings",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf_token}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "postman-settings-{{$guid}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"store_name\": \"Atiten Kids Store\",\n  \"logo_ref\": null,\n  \"whatsapp_number\": \"+2348121531909\",\n  \"phone_number\": \"+2348121531909\",\n  \"instagram_url\": null,\n  \"tiktok_url\": \"https://www.tiktok.com/@bookie_kiddiestore\",\n  \"address\": \"Emily Bus-stop by Dikram Filling Station\",\n  \"city\": \"Lagos\",\n  \"currency\": \"NGN\",\n  \"minimum_order_minor\": null,\n  \"business_hours\": {\n    \"monday\": {\"closed\": false, \"open\": \"09:00\", \"close\": \"18:00\"},\n    \"tuesday\": {\"closed\": false, \"open\": \"09:00\", \"close\": \"18:00\"},\n    \"wednesday\": {\"closed\": false, \"open\": \"09:00\", \"close\": \"18:00\"},\n    \"thursday\": {\"closed\": false, \"open\": \"09:00\", \"close\": \"18:00\"},\n    \"friday\": {\"closed\": false, \"open\": \"09:00\", \"close\": \"18:00\"},\n    \"saturday\": {\"closed\": false, \"open\": \"09:00\", \"close\": \"18:00\"},\n    \"sunday\": {\"closed\": true, \"open\": null, \"close\": null}\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/store-settings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "store-settings"
+              ]
+            },
+            "description": "Replaces business configuration idempotently. Writes the owner-confirmed values."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (String(pm.environment.get('run_settings_write')).toLowerCase() !== 'true') { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('persists the store name', function () { pm.expect(pm.response.json().store_name).to.eql('Atiten Kids Store'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List admin delivery areas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/delivery-areas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "delivery-areas"
+              ]
+            },
+            "description": "Returns every delivery area, including inactive ones, in display order."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('returns the Lagos areas', function () { const body = pm.response.json(); pm.expect(body).to.be.an('array'); pm.expect(body.length).to.be.at.least(2); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create delivery area",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf_token}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "postman-delivery-create-{{$guid}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Postman Contract Area\",\n  \"fee_minor\": 100000,\n  \"display_position\": 99\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/delivery-areas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "delivery-areas"
+              ]
+            },
+            "description": "Creates a named delivery area with a flat fee. An identical name replays safely."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (String(pm.environment.get('run_settings_write')).toLowerCase() !== 'true') { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns HTTP 201', function () { pm.response.to.have.status(201); });",
+                  "pm.test('stores the area id', function () { const body = pm.response.json(); pm.expect(body.name).to.eql('Postman Contract Area'); pm.environment.set('admin_delivery_area_id', body.id); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update delivery area",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf_token}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "postman-delivery-update-{{$guid}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fee_minor\": 120000\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/delivery-areas/{{admin_delivery_area_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "delivery-areas",
+                "{{admin_delivery_area_id}}"
+              ]
+            },
+            "description": "Reprices one delivery area. Requires a created area id."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (String(pm.environment.get('run_settings_write')).toLowerCase() !== 'true' || !pm.environment.get('admin_delivery_area_id')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('updates the fee', function () { pm.expect(pm.response.json().fee_minor).to.eql(120000); });"
+                ]
+              }
+            }
+          ]
         }
       ]
     }

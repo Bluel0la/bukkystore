@@ -12,7 +12,7 @@ export default function CartPage() {
   return (
     <main className="mx-auto min-h-screen max-w-4xl px-5 py-6 sm:px-8">
       <header className="mb-10 flex items-center justify-between border-b border-[var(--line)] pb-5">
-        <Link className="text-xl font-semibold" href="/">Bukky Store</Link>
+        <Link className="text-xl font-semibold" href="/">Atiten Kids Store</Link>
         <Link className="text-sm" href="/#shop">Continue shopping</Link>
       </header>
       <div className="grid gap-10 md:grid-cols-[1fr_19rem] md:items-start">

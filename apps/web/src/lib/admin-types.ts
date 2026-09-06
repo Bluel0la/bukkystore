@@ -37,6 +37,30 @@ export type AdminOrder = AdminOrderSummary & {
 };
 export type AdminOrderPage = { items: AdminOrderSummary[] };
 
+export type DaySchedule = { closed: boolean; open: string | null; close: string | null };
+export type BusinessHours = {
+  monday: DaySchedule; tuesday: DaySchedule; wednesday: DaySchedule; thursday: DaySchedule;
+  friday: DaySchedule; saturday: DaySchedule; sunday: DaySchedule;
+};
+export type AdminStoreSettings = {
+  id: string; store_name: string; logo_ref: string | null;
+  whatsapp_number: string; phone_number: string;
+  instagram_url: string | null; tiktok_url: string | null;
+  address: string; city: string; currency: string;
+  minimum_order_minor: number | null; business_hours: BusinessHours;
+  created_at: string; updated_at: string;
+};
+export type AdminDeliveryArea = {
+  id: string; name: string; fee_minor: number; currency: string;
+  display_position: number; is_active: boolean;
+};
+export type ProductEngagement = {
+  product_id: string; product_name: string; range_days: number; period_start: string;
+  views: number; shares: number; whatsapp_clicks: number;
+};
+export type EngagementMetric = {
+  product_id: string; product_name: string; views: number; whatsapp_clicks: number;
+};
 export type AdminAnalyticsOverview = {
   generated_at: string; period_start: string; range_days: number; currency: "NGN";
   total_orders: number; sales_orders: number; sales_minor: number; average_order_minor: number;
@@ -44,6 +68,6 @@ export type AdminAnalyticsOverview = {
   low_stock_variants: number;
   top_products: Array<{ product_id: string; product_name: string; units_sold: number; sales_minor: number }>;
   sources: Array<{ source: string; orders: number; sales_minor: number }>;
-  low_stock: Array<{ variant_id: string; product_id: string; product_name: string;
+  engagement: EngagementMetric[];  low_stock: Array<{ variant_id: string; product_id: string; product_name: string;
     variant_name: string; sku: string; available_quantity: number; low_stock_threshold: number }>;
 };

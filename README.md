@@ -1,6 +1,6 @@
-# Bukky Store
+# Atiten Kids Store
 
-Bukky Store is a mobile-first fashion storefront and operations dashboard for a
+Atiten Kids Store is a mobile-first kids fashion storefront and operations dashboard for a
 small Lagos retailer. It is designed around guest checkout, social-media product
 links, WhatsApp enquiries, simple administration, variant-level inventory, and
 provider-verified payments.
@@ -87,7 +87,9 @@ trust a browser-supplied amount or status. OPay credentials and callback
 authentication remain intentionally deferred until merchant developer access is
 confirmed.
 
-The development seed is idempotent and creates representative dresses, shoes, and
+The development seed is idempotent and creates the Atiten Kids Store business
+settings (Emily Bus-stop by Dikram Filling Station, Mon–Sat 9am–6pm, WhatsApp
++2348121531909, TikTok @Bookie_kiddiestore), representative dresses, shoes, and
 bags with colour-and-size stock variants, plus provisional Lagos Mainland and
 Lagos Island delivery fees. Those fees are development defaults and must be
 confirmed with the store owner before launch. Product photography remains

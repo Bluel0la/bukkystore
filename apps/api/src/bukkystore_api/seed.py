@@ -5,6 +5,7 @@ from uuid import uuid4
 
 from sqlalchemy import select
 
+from bukkystore_api.admin_settings.models import StoreSetting
 from bukkystore_api.catalogue.models import (
     Category,
     InventoryMovement,
@@ -17,6 +18,37 @@ from bukkystore_api.catalogue.models import (
 from bukkystore_api.commerce.models import DeliveryArea
 from bukkystore_api.config import get_settings
 from bukkystore_api.database import Database
+
+
+def _default_business_hours() -> dict[str, dict[str, object]]:
+    weekday = {"closed": False, "open": "09:00", "close": "18:00"}
+    return {
+        "monday": dict(weekday),
+        "tuesday": dict(weekday),
+        "wednesday": dict(weekday),
+        "thursday": dict(weekday),
+        "friday": dict(weekday),
+        "saturday": dict(weekday),
+        "sunday": {"closed": True, "open": None, "close": None},
+    }
+
+
+def _default_store_settings() -> StoreSetting:
+    """Return the owner-confirmed business details for Atiten Kids Store."""
+
+    return StoreSetting(
+        store_name="Atiten Kids Store",
+        logo_ref=None,
+        whatsapp_number="+2348121531909",
+        phone_number="+2348121531909",
+        instagram_url=None,
+        tiktok_url="https://www.tiktok.com/@bookie_kiddiestore",
+        address="Emily Bus-stop by Dikram Filling Station",
+        city="Lagos",
+        currency="NGN",
+        minimum_order_minor=None,
+        business_hours=_default_business_hours(),
+    )
 
 
 def _variant(
@@ -63,8 +95,16 @@ async def seed_catalogue() -> bool:
             delivery_exists = await session.scalar(
                 select(DeliveryArea.id).where(DeliveryArea.name == "Lagos Mainland")
             )
-            if catalogue_exists is not None and delivery_exists is not None:
+            settings_exists = await session.scalar(select(StoreSetting.id))
+            if (
+                catalogue_exists is not None
+                and delivery_exists is not None
+                and settings_exists is not None
+            ):
                 return False
+
+            if settings_exists is None:
+                session.add_all([_default_store_settings()])
 
             if delivery_exists is None:
                 session.add_all(

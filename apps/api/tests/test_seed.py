@@ -7,6 +7,7 @@ from typing import Any
 from uuid import uuid4
 
 from bukkystore_api import seed
+from bukkystore_api.admin_settings.models import StoreSetting
 from bukkystore_api.catalogue.models import Product
 from bukkystore_api.commerce.models import DeliveryArea
 
@@ -63,6 +64,11 @@ async def test_seed_creates_representative_catalogue(monkeypatch: Any) -> None:
         "Lagos Mainland",
         "Lagos Island",
     }
+    settings = [item for item in session.added if isinstance(item, StoreSetting)]
+    assert len(settings) == 1
+    assert settings[0].store_name == "Atiten Kids Store"
+    assert settings[0].whatsapp_number == "+2348121531909"
+    assert settings[0].tiktok_url == "https://www.tiktok.com/@bookie_kiddiestore"
 
 
 async def test_seed_is_idempotent(monkeypatch: Any) -> None:

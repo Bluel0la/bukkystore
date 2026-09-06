@@ -9,8 +9,8 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: { default: "Bukky Store", template: "%s · Bukky Store" },
-  description: "Clothing, shoes, bags, and accessories selected in Lagos.",
+  title: { default: "Atiten Kids Store", template: "%s · Atiten Kids Store" },
+  description: "Kids clothing, shoes, and accessories selected in Lagos.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {

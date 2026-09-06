@@ -4,6 +4,7 @@ import { BackendStatus } from "@/components/backend-status";
 import { CartLink } from "@/components/cart-link";
 import { ProductCard } from "@/components/product-card";
 import { getCategories, getProducts } from "@/lib/catalogue";
+import { getPublicStoreSettings } from "@/lib/store-settings";
 
 type HomeProps = { searchParams: Promise<{ category?: string | string[] }> };
 
@@ -13,6 +14,7 @@ export default async function Home({ searchParams }: HomeProps) {
   const productQuery = new URLSearchParams({ limit: "8" });
   if (selectedCategory) productQuery.set("category", selectedCategory);
   const catalogue = await Promise.all([getCategories(), getProducts(productQuery.toString())]).catch(() => null);
+  const settings = await getPublicStoreSettings();
   const allCategories = catalogue?.[0] ?? [];
   const parentIds = new Set(allCategories.flatMap((category) => category.parent_id ? [category.parent_id] : []));
   const categories = allCategories.filter((category) => !parentIds.has(category.id));
@@ -22,7 +24,7 @@ export default async function Home({ searchParams }: HomeProps) {
     <main className="mx-auto min-h-screen max-w-6xl px-5 py-6 sm:px-8 lg:px-12">
       <header className="flex items-center justify-between border-b border-[var(--line)] pb-5">
         <Link className="text-xl font-semibold tracking-[-0.03em]" href="/">
-          Bukky Store
+          {settings.store_name}
         </Link>
         <nav aria-label="Primary navigation" className="flex items-center gap-5 text-sm">
           <Link href="#shop">Shop</Link>
@@ -39,12 +41,12 @@ export default async function Home({ searchParams }: HomeProps) {
             Lagos · The first edit
           </p>
           <h1 className="max-w-3xl text-5xl font-semibold leading-[0.95] tracking-[-0.055em] sm:text-7xl">
-            Find the piece that feels like you.
+            Little outfits, big smiles.
           </h1>
         </div>
         <div className="border-l-2 border-[var(--peach)] pl-5 text-[var(--muted)]">
           <p className="max-w-sm leading-7">
-            Clothing, shoes, bags, and accessories selected for effortless everyday style.
+            Kids clothing, shoes, and accessories selected for comfort and play.
           </p>
           <BackendStatus />
         </div>

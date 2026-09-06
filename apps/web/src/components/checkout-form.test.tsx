@@ -33,6 +33,7 @@ describe("CheckoutForm", () => {
     const options = fetchMock.mock.calls[0][1];
     expect(options.headers["Idempotency-Key"]).toBe("checkout:request-id");
     expect(JSON.parse(options.body).items).toEqual([{ variant_id: "variant-id", quantity: 1 }]);
+    expect(JSON.parse(options.body).attribution).toEqual({ source: "direct", campaign: null });
     expect(assign).toHaveBeenCalledWith("http://localhost:3000/checkout/payment-demo?order=BS-1&token=private-token");
   });
 

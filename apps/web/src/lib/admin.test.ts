@@ -7,11 +7,14 @@ import {
   adminRequest,
   getAdminAnalytics,
   getAdminCategories,
+  getAdminDeliveryAreas,
   getAdminOrder,
   getAdminOrders,
   getAdminProduct,
   getAdminProducts,
+  getAdminStoreSettings,
   getAdminUser,
+  getProductEngagement,
 } from "@/lib/admin";
 
 describe("admin server client", () => {
@@ -37,6 +40,9 @@ describe("admin server client", () => {
     await getAdminOrders();
     await getAdminOrder("order/id");
     await getAdminAnalytics();
+    await getAdminStoreSettings();
+    await getAdminDeliveryAreas();
+    await getProductEngagement("product/id");
 
     expect(fetchMock).toHaveBeenNthCalledWith(
       1,
@@ -46,15 +52,25 @@ describe("admin server client", () => {
     expect(fetchMock.mock.calls[2][0]).toContain("product%2Fid");
     expect(fetchMock.mock.calls[5][0]).toContain("order%2Fid");
     expect(fetchMock.mock.calls[6][0]).toContain("/analytics/overview?days=30");
+    expect(fetchMock.mock.calls[7][0]).toContain("/store-settings");
+    expect(fetchMock.mock.calls[8][0]).toContain("/delivery-areas");
+    expect(fetchMock.mock.calls[9][0]).toContain("/analytics/products/product%2Fid?days=30");
   });
 
-  it("returns null for an expired session", async () => {
+  it("returns null for an expired or forbidden session", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 401 })));
+    await expect(adminRequest("/products")).resolves.toBeNull();
+
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 403 })));
     await expect(adminRequest("/products")).resolves.toBeNull();
   });
 
-  it("throws a safe error when the API is unavailable", async () => {
+  it("returns null when the API is unavailable or fetch fails", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 503 })));
-    await expect(adminRequest("/products")).rejects.toThrow("Admin service unavailable");
+    await expect(adminRequest("/products")).resolves.toBeNull();
+
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("Network connection error")));
+    await expect(adminRequest("/products")).resolves.toBeNull();
   });
 });
+

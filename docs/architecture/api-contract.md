@@ -108,9 +108,12 @@ payment remains successful while the order moves to `REFUND_REQUIRED`.
 POST /analytics/events
 ```
 
-The request supports only an allowlist of event types and bounded metadata. The
-endpoint is rate-limited and returns success independently of downstream analytics
-processing. It cannot update prices, stock, orders, or payments.
+The request supports only an allowlist of event types (`product_view`,
+`share_click`, `whatsapp_click`) and bounded metadata. The endpoint is
+rate-limited (30 requests per minute per client on a single instance) and
+returns success independently of downstream analytics processing. It cannot
+update prices, stock, orders, or payments. Unknown product IDs are rejected
+with a 404; unknown event types with a 422.
 
 ## Authentication
 
@@ -180,6 +183,14 @@ GET    /admin/store-settings
 PATCH  /admin/store-settings
 ```
 
+These routes are implemented. The store settings hold the owner-confirmed
+Atiten Kids Store identity, contact, socials, hours, and minimum order as a
+singleton row; `PATCH` requires an `Idempotency-Key` and replays identical
+retries instead of rewriting. Delivery areas carry a display position and an
+active flag; deactivation preserves order history. A public
+`GET /store-settings` exposes the safe storefront subset (name, logo
+reference, contact, socials, address, hours) with a 404 when unconfigured.
+
 Payment secrets are startup configuration, not editable store settings and never
 appear in API responses.
 
@@ -213,6 +224,7 @@ inventory mutation.
 
 ```text
 GET /admin/analytics/overview
+GET /admin/analytics/products/{product_id}
 ```
 
 The overview is implemented as a single authenticated response containing the
@@ -221,7 +233,10 @@ low-stock variants, top products, and checkout-source breakdown. `days` is bound
 from 1 to 365. Sales include non-cancelled paid orders in `CONFIRMED`, `PROCESSING`,
 `OUT_FOR_DELIVERY`, or `COMPLETED`; pending/refund and stock counts are current
 operational totals rather than historical snapshots. Aggregate queries are indexed
-and issue no query per product or order.
+and issue no query per product or order. The overview also carries an
+`engagement` list of the most-viewed products with their WhatsApp click counts.
+The product endpoint returns bounded views, shares, and WhatsApp clicks for one
+product and powers the admin share panel.
 
 ## Configuration boundary
 

@@ -38,6 +38,23 @@ class LowStockMetric(BaseModel):
     low_stock_threshold: int
 
 
+class ProductEngagementMetric(BaseModel):
+    product_id: UUID
+    product_name: str
+    views: int
+    whatsapp_clicks: int
+
+
+class ProductEngagementResponse(BaseModel):
+    product_id: UUID
+    product_name: str
+    range_days: int
+    period_start: datetime
+    views: int
+    shares: int
+    whatsapp_clicks: int
+
+
 class AdminAnalyticsOverview(BaseModel):
     generated_at: datetime
     period_start: datetime
@@ -54,3 +71,4 @@ class AdminAnalyticsOverview(BaseModel):
     top_products: list[TopProductMetric]
     sources: list[SourceMetric]
     low_stock: list[LowStockMetric]
+    engagement: list[ProductEngagementMetric]

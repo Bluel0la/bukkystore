@@ -158,6 +158,7 @@ async def product_image_register(
 @router.patch(
     "/products/{product_id}/images/{image_id:uuid}/alt-text",
     response_model=AdminProductImageResponse,
+    responses={404: {"model": ErrorResponse}},
     summary="Update product photo alternative text",
 )
 async def product_image_update(
@@ -187,6 +188,7 @@ async def product_image_reorder(
 @router.delete(
     "/products/{product_id}/images/{image_id:uuid}",
     response_model=list[AdminProductImageResponse],
+    responses={404: {"model": ErrorResponse}},
     summary="Remove a product photo from Cloudinary and the catalogue",
 )
 async def product_image_remove(

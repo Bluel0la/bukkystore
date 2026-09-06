@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 from datetime import UTC, datetime, timedelta
+from uuid import UUID
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,11 +11,15 @@ from bukkystore_api.admin_analytics.schemas import (
     AdminAnalyticsOverview,
     AnalyticsRangeQuery,
     LowStockMetric,
+    ProductEngagementMetric,
+    ProductEngagementResponse,
     SourceMetric,
     TopProductMetric,
 )
+from bukkystore_api.analytics.service import product_engagement_counts, top_engaged_products
 from bukkystore_api.catalogue.models import Product, ProductStatus, ProductVariant, VariantStatus
 from bukkystore_api.commerce.models import Order, OrderItem, OrderStatus, Refund, RefundStatus
+from bukkystore_api.errors import ApiError
 
 logger = logging.getLogger(__name__)
 
@@ -130,6 +135,7 @@ async def get_admin_analytics_overview(
     sales_orders = int(metrics.sales_orders)
     sales_minor = int(metrics.sales_minor)
     low_stock_total = int(low_stock_rows[0].total_low_stock) if low_stock_rows else 0
+    engaged = await top_engaged_products(session, period_start=period_start)
     overview = AdminAnalyticsOverview(
         generated_at=generated_at,
         period_start=period_start,
@@ -171,6 +177,15 @@ async def get_admin_analytics_overview(
             )
             for row in low_stock_rows
         ],
+        engagement=[
+            ProductEngagementMetric(
+                product_id=item["product_id"],
+                product_name=item["product_name"],
+                views=item["views"],
+                whatsapp_clicks=item["whatsapp_clicks"],
+            )
+            for item in engaged
+        ],
     )
     logger.info(
         "admin_analytics_calculated",
@@ -183,3 +198,31 @@ async def get_admin_analytics_overview(
         },
     )
     return overview
+
+
+async def get_product_engagement(
+    session: AsyncSession,
+    product_id: UUID,
+    query: AnalyticsRangeQuery,
+    *,
+    now: datetime | None = None,
+) -> ProductEngagementResponse:
+    """Return view, share, and WhatsApp counts for one product over a bounded window."""
+
+    generated_at = now or datetime.now(UTC)
+    period_start = generated_at - timedelta(days=query.days)
+    product = await session.get(Product, product_id)
+    if product is None:
+        raise ApiError(404, "product_not_found", "The product was not found.")
+    counts = await product_engagement_counts(
+        session, product_id=product.id, period_start=period_start
+    )
+    return ProductEngagementResponse(
+        product_id=product.id,
+        product_name=product.name,
+        range_days=query.days,
+        period_start=period_start,
+        views=counts["views"],
+        shares=counts["shares"],
+        whatsapp_clicks=counts["whatsapp_clicks"],
+    )
