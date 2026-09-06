@@ -86,7 +86,7 @@ export function ProductPurchasePanel({ product }: { product: ProductDetail }) {
           Buy now
         </button>
       </div>
-      <p aria-live="polite" className="mt-3 min-h-5 text-sm text-[var(--wine)]">{message}</p>
+      <p aria-live="polite" className="mt-3 min-h-5 text-sm text-(--wine)">{message}</p>
     </div>
   );
 }

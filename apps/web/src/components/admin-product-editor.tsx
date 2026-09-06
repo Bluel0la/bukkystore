@@ -38,9 +38,9 @@ function StockAdjustment({ variant }: { variant: AdminVariant }) {
 
   return (
     <form className="grid gap-3 rounded-2xl border border-[var(--line)] p-4" onSubmit={submit}>
-      <div className="flex items-start justify-between gap-4"><div><p className="font-medium">{variant.display_name}</p><p className="mt-1 text-xs text-[var(--muted)]">{variant.sku}</p></div><div className="text-right"><p className="text-2xl font-semibold">{variant.stock_on_hand}</p><p className="text-xs text-[var(--muted)]">{variant.reserved_quantity} reserved</p></div></div>
+      <div className="flex items-start justify-between gap-4"><div><p className="font-medium">{variant.display_name}</p><p className="mt-1 text-xs text-(--muted)">{variant.sku}</p></div><div className="text-right"><p className="text-2xl font-semibold">{variant.stock_on_hand}</p><p className="text-xs text-(--muted)">{variant.reserved_quantity} reserved</p></div></div>
       <div className="grid gap-3 sm:grid-cols-[7rem_1fr_auto]"><input aria-label={`Stock change for ${variant.display_name}`} className="admin-input" name="delta" placeholder="+3 or -1" required type="number" /><input aria-label={`Reason for ${variant.display_name}`} className="admin-input" maxLength={500} name="reason" placeholder="Reason for change" required /><button className="rounded-full bg-[var(--ink)] px-4 py-2 text-sm text-white" disabled={pending} type="submit">{pending ? "Saving…" : "Adjust"}</button></div>
-      {error && <p className="text-xs text-[var(--wine)]" role="alert">{error}</p>}
+      {error && <p className="text-xs text-(--wine)" role="alert">{error}</p>}
     </form>
   );
 }
@@ -78,7 +78,7 @@ export function AdminProductEditor({ product, categories }: { product: AdminProd
         <label className="grid gap-2 text-sm">Description<textarea className="admin-input min-h-28" defaultValue={product.description} name="description" /></label><label className="flex gap-3 text-sm"><input defaultChecked={product.featured} name="featured" type="checkbox" /> Feature on storefront</label>
         {message && <p className="text-sm" role="status">{message}</p>}<button className="admin-primary justify-self-start" disabled={pending} type="submit">{pending ? "Saving…" : "Save details"}</button>
       </form>
-      <section><div className="mb-4"><h2 className="text-xl font-semibold">Stock by option</h2><p className="mt-1 text-sm text-[var(--muted)]">Use a positive number to add stock or a negative number to correct it down.</p></div><div className="grid gap-3">{product.variants.map((variant) => <StockAdjustment key={variant.id} variant={variant} />)}</div></section>
+      <section><div className="mb-4"><h2 className="text-xl font-semibold">Stock by option</h2><p className="mt-1 text-sm text-(--muted)">Use a positive number to add stock or a negative number to correct it down.</p></div><div className="grid gap-3">{product.variants.map((variant) => <StockAdjustment key={variant.id} variant={variant} />)}</div></section>
     </div>
   );
 }

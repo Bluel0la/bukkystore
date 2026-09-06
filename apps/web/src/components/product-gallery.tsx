@@ -7,7 +7,7 @@ import type { ProductImage } from "@/lib/catalogue";
 
 export function ProductGallery({ images }: { images: ProductImage[] }) {
   const [selected, setSelected] = useState(0);
-  if (!images.length) return <div className="flex aspect-[4/5] items-center justify-center rounded-[2.5rem] border border-[var(--line)] bg-[var(--sand)] text-center"><div><span className="text-7xl text-[var(--peach)]" aria-hidden="true">B</span><p className="mt-5 text-xs uppercase tracking-[0.2em] text-[var(--muted)]">Photo coming soon</p></div></div>;
+  if (!images.length) return <div className="flex aspect-[4/5] items-center justify-center rounded-[2.5rem] border border-[var(--line)] bg-[var(--sand)] text-center"><div><span className="text-7xl text-(--peach)" aria-hidden="true">B</span><p className="mt-5 text-xs uppercase tracking-[0.2em] text-(--muted)">Photo coming soon</p></div></div>;
   const active = images[selected] ?? images[0];
   return <div className="grid gap-3">
     <div className="relative aspect-[4/5] overflow-hidden rounded-[2.5rem] border border-[var(--line)] bg-[var(--sand)]">

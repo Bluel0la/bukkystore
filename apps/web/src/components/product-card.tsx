@@ -18,20 +18,20 @@ export function ProductCard({ product }: { product: ProductCardData }) {
             />
           ) : (
             <div className="px-6 text-center">
-              <span className="block text-5xl text-[var(--peach)]" aria-hidden="true">B</span>
-              <span className="mt-4 block text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Photo coming soon</span>
+              <span className="block text-5xl text-(--peach)" aria-hidden="true">B</span>
+              <span className="mt-4 block text-xs uppercase tracking-[0.18em] text-(--muted)">Photo coming soon</span>
             </div>
           )}
           {!product.available && <span className="absolute left-3 top-3 rounded-full bg-white px-3 py-1 text-xs font-semibold">Sold out</span>}
         </div>
         <div className="px-1 pt-4">
-          <p className="text-xs uppercase tracking-[0.14em] text-[var(--muted)]">{product.category.name}</p>
+          <p className="text-xs uppercase tracking-[0.14em] text-(--muted)">{product.category.name}</p>
           <div className="mt-1 flex items-start justify-between gap-3">
             <h3 className="font-semibold">{product.name}</h3>
             <p className="whitespace-nowrap text-sm">{formatNaira(product.price_minor)}</p>
           </div>
           {(product.colours.length > 0 || product.sizes.length > 0) && (
-            <p className="mt-2 text-xs text-[var(--muted)]">
+            <p className="mt-2 text-xs text-(--muted)">
               {[product.colours.join(" · "), product.sizes.join(" · ")].filter(Boolean).join("  /  ")}
             </p>
           )}

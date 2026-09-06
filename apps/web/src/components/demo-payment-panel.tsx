@@ -35,7 +35,7 @@ export function DemoPaymentPanel({ order, token }: { order: string; token: strin
       <button className="admin-primary w-full" disabled={pending} onClick={confirm} type="button">
         {pending ? "Confirming payment…" : "Simulate successful payment"}
       </button>
-      <p aria-live="polite" className="mt-3 text-sm text-[var(--wine)]">{error}</p>
+      <p aria-live="polite" className="mt-3 text-sm text-(--wine)">{error}</p>
     </div>
   );
 }

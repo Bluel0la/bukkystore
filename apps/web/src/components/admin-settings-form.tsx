@@ -94,7 +94,7 @@ export function AdminSettingsForm({ initial }: { initial: AdminStoreSettings }) 
       <section className="checkout-card" aria-labelledby="identity-heading">
         <h2 className="text-lg font-semibold" id="identity-heading">Store identity</h2>
         <label className="mt-4 block text-sm">Store name<input className="admin-input mt-2" maxLength={120} onChange={(event) => setStoreName(event.target.value)} required value={storeName} /></label>
-        <label className="mt-4 block text-sm">Logo reference <span className="text-[var(--muted)]">(optional, until the new logo is ready)</span><input className="admin-input mt-2" maxLength={500} onChange={(event) => setLogoRef(event.target.value)} placeholder="Uploads later — leave empty for now" value={logoRef} /></label>
+        <label className="mt-4 block text-sm">Logo reference <span className="text-(--muted)">(optional, until the new logo is ready)</span><input className="admin-input mt-2" maxLength={500} onChange={(event) => setLogoRef(event.target.value)} placeholder="Uploads later — leave empty for now" value={logoRef} /></label>
       </section>
 
       <section className="checkout-card" aria-labelledby="contact-heading">
@@ -103,9 +103,9 @@ export function AdminSettingsForm({ initial }: { initial: AdminStoreSettings }) 
         <label className="mt-4 block text-sm">Phone number<input className="admin-input mt-2" inputMode="tel" onChange={(event) => setPhoneNumber(event.target.value)} required value={phoneNumber} /></label>
         <label className="mt-4 block text-sm">Shop address<textarea className="admin-input mt-2 min-h-20" maxLength={500} onChange={(event) => setAddress(event.target.value)} required value={address} /></label>
         <label className="mt-4 block text-sm">City<input className="admin-input mt-2" maxLength={120} onChange={(event) => setCity(event.target.value)} value={city} /></label>
-        <label className="mt-4 block text-sm">Instagram URL <span className="text-[var(--muted)]">(optional)</span><input className="admin-input mt-2" inputMode="url" onChange={(event) => setInstagramUrl(event.target.value)} placeholder="https://instagram.com/…" value={instagramUrl} /></label>
-        <label className="mt-4 block text-sm">TikTok URL <span className="text-[var(--muted)]">(optional)</span><input className="admin-input mt-2" inputMode="url" onChange={(event) => setTiktokUrl(event.target.value)} placeholder="https://tiktok.com/@…" value={tiktokUrl} /></label>
-        <label className="mt-4 block text-sm">Minimum order (₦) <span className="text-[var(--muted)]">(optional, empty means none)</span><input className="admin-input mt-2" inputMode="decimal" onChange={(event) => setMinimumOrder(event.target.value)} placeholder="No minimum" value={minimumOrder} /></label>
+        <label className="mt-4 block text-sm">Instagram URL <span className="text-(--muted)">(optional)</span><input className="admin-input mt-2" inputMode="url" onChange={(event) => setInstagramUrl(event.target.value)} placeholder="https://instagram.com/…" value={instagramUrl} /></label>
+        <label className="mt-4 block text-sm">TikTok URL <span className="text-(--muted)">(optional)</span><input className="admin-input mt-2" inputMode="url" onChange={(event) => setTiktokUrl(event.target.value)} placeholder="https://tiktok.com/@…" value={tiktokUrl} /></label>
+        <label className="mt-4 block text-sm">Minimum order (₦) <span className="text-(--muted)">(optional, empty means none)</span><input className="admin-input mt-2" inputMode="decimal" onChange={(event) => setMinimumOrder(event.target.value)} placeholder="No minimum" value={minimumOrder} /></label>
       </section>
 
       <section className="checkout-card" aria-labelledby="hours-heading">
@@ -128,7 +128,7 @@ export function AdminSettingsForm({ initial }: { initial: AdminStoreSettings }) 
 
       <div>
         <button className="admin-primary w-full" disabled={pending} onClick={save} type="button">{pending ? "Saving…" : "Save settings"}</button>
-        <p aria-live="polite" className="mt-3 text-sm text-[var(--wine)]">{error}</p>
+        <p aria-live="polite" className="mt-3 text-sm text-(--wine)">{error}</p>
         {saved && !error && <p aria-live="polite" className="mt-3 text-sm text-[#1f7a46]">Settings saved.</p>}
       </div>
     </div>

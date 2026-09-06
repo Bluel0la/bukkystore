@@ -83,7 +83,7 @@ export function AdminProductForm({ categories }: { categories: Category[] }) {
       </section>
 
       <section className="rounded-3xl border border-[var(--line)] bg-white p-5 sm:p-7">
-        <div className="flex items-center justify-between gap-4"><div><h2 className="text-xl font-semibold">Colours, sizes and stock</h2><p className="mt-1 text-sm text-[var(--muted)]">Add one row for every option customers can choose. Product codes are generated automatically.</p></div><button className="rounded-full border border-[var(--line)] px-4 py-2 text-sm" onClick={() => setVariants((current) => [...current, emptyVariant()])} type="button">Add option</button></div>
+        <div className="flex items-center justify-between gap-4"><div><h2 className="text-xl font-semibold">Colours, sizes and stock</h2><p className="mt-1 text-sm text-(--muted)">Add one row for every option customers can choose. Product codes are generated automatically.</p></div><button className="rounded-full border border-[var(--line)] px-4 py-2 text-sm" onClick={() => setVariants((current) => [...current, emptyVariant()])} type="button">Add option</button></div>
         <div className="mt-6 grid gap-4">
           {variants.map((variant, index) => (
             <fieldset className="grid gap-3 rounded-2xl bg-[var(--paper)] p-4 sm:grid-cols-4" key={index}>
@@ -92,12 +92,12 @@ export function AdminProductForm({ categories }: { categories: Category[] }) {
               <label className="grid gap-1 text-xs">Size<input className="admin-input" onChange={(event) => updateVariant(index, "size", event.target.value)} value={variant.size} /></label>
               <label className="grid gap-1 text-xs">Display name<input className="admin-input" onChange={(event) => updateVariant(index, "displayName", event.target.value)} required value={variant.displayName} /></label>
               <label className="grid gap-1 text-xs">Opening stock<input className="admin-input" min="0" onChange={(event) => updateVariant(index, "stock", event.target.value)} required type="number" value={variant.stock} /></label>
-              {variants.length > 1 && <button className="justify-self-start text-xs text-[var(--wine)] sm:col-span-4" onClick={() => setVariants((current) => current.filter((_, position) => position !== index))} type="button">Remove option</button>}
+              {variants.length > 1 && <button className="justify-self-start text-xs text-(--wine) sm:col-span-4" onClick={() => setVariants((current) => current.filter((_, position) => position !== index))} type="button">Remove option</button>}
             </fieldset>
           ))}
         </div>
       </section>
-      {error && <p className="rounded-xl bg-[#f4e6e7] p-4 text-sm text-[var(--wine)]" role="alert">{error}</p>}
+      {error && <p className="rounded-xl bg-[#f4e6e7] p-4 text-sm text-(--wine)" role="alert">{error}</p>}
       <div className="flex justify-end"><button className="admin-primary min-w-40" disabled={pending} type="submit">{pending ? "Saving…" : "Save product"}</button></div>
     </form>
   );

@@ -20,7 +20,7 @@ export default async function AdminLoginPage() {
           <Link className="mt-10 inline-block text-sm underline underline-offset-4" href="/">Back to storefront</Link>
         </section>
         <section className="p-8 sm:p-12">
-          <p className="text-sm text-[var(--muted)]">Private management area</p>
+          <p className="text-sm text-(--muted)">Private management area</p>
           <h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em]">Welcome back</h2>
           <AdminLoginForm />
         </section>

@@ -42,7 +42,7 @@ export function AdminLoginForm() {
         Password
         <input autoComplete="current-password" className="admin-input" minLength={12} name="password" required type="password" />
       </label>
-      {error && <p className="rounded-xl bg-[#f4e6e7] p-3 text-sm text-[var(--wine)]" role="alert">{error}</p>}
+      {error && <p className="rounded-xl bg-[#f4e6e7] p-3 text-sm text-(--wine)" role="alert">{error}</p>}
       <button className="admin-primary" disabled={pending} type="submit">
         {pending ? "Signing in…" : "Sign in"}
       </button>

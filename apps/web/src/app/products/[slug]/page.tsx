@@ -58,10 +58,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
       <div className="grid gap-10 md:grid-cols-2 md:items-start">
         <ProductGallery images={product.images} />
         <section>
-          <p className="text-xs uppercase tracking-[0.18em] text-[var(--wine)]">{product.category.name}</p>
+          <p className="text-xs uppercase tracking-[0.18em] text-(--wine)">{product.category.name}</p>
           <h1 className="mt-3 text-4xl font-semibold tracking-[-0.045em]">{product.name}</h1>
           <p className="mt-3 text-xl">{formatNaira(product.price_minor)}</p>
-          <p className="mt-7 leading-7 text-[var(--muted)]">{product.description}</p>
+          <p className="mt-7 leading-7 text-(--muted)">{product.description}</p>
           <ProductPurchasePanel product={product} />
           <ProductShare
             productId={product.id}

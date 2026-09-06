@@ -72,7 +72,7 @@ export function ProductShare({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="font-semibold">Share this piece</h2>
-          <p className="mt-1 text-sm text-[var(--muted)]">Send it to a friend or ask about it first.</p>
+          <p className="mt-1 text-sm text-(--muted)">Send it to a friend or ask about it first.</p>
         </div>
         <button className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm" onClick={nativeShare} type="button">Share</button>
       </div>

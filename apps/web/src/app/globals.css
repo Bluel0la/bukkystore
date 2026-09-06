@@ -16,6 +16,13 @@
 
 html {
   background: var(--paper);
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 body {
@@ -28,8 +35,39 @@ body {
 }
 
 a {
-  color: inherit;
   text-decoration: none;
+}
+
+/* Vendor effect badge: the AIDesigner runtime injects a "Made in" badge
+   (host element <div data-aifx-wm>, contents sealed in a closed shadow
+   root). The store's licence key does not suppress it, so hide the host.
+   This only hides the badge; the runtime's licence request still fires. */
+div[data-aifx-wm] {
+  display: none !important;
+}
+
+/* Category transitions: the shop grid remounts on category change
+   (keyed by the selected slug), replaying a short slide-in. */
+@keyframes shop-grid-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(2.5rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.shop-grid-enter {
+  animation: shop-grid-slide-in 0.32s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shop-grid-enter {
+    animation: none;
+  }
 }
 
 button,
