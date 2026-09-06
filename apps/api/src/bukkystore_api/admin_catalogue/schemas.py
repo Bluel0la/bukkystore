@@ -39,7 +39,10 @@ class AdminCategoryUpdate(AdminCatalogueSchema):
 
 
 class AdminVariantCreate(AdminCatalogueSchema):
-    sku: Annotated[ShortText, StringConstraints(max_length=80)]
+    sku: Annotated[ShortText, StringConstraints(max_length=80)] | None = Field(
+        default=None,
+        description="Optional explicit SKU. When omitted, the backend generates one.",
+    )
     colour: (
         Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=80)] | None
     ) = None
@@ -72,7 +75,7 @@ class AdminProductCreate(AdminCatalogueSchema):
             and self.compare_at_price_minor <= self.base_price_minor
         ):
             raise ValueError("compare_at_price_minor must exceed base_price_minor")
-        skus = [variant.sku.casefold() for variant in self.variants]
+        skus = [variant.sku.casefold() for variant in self.variants if variant.sku]
         if len(skus) != len(set(skus)):
             raise ValueError("Variant SKUs must be unique")
         options = [

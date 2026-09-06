@@ -65,6 +65,19 @@ async def test_checkout_masks_malformed_json(client: AsyncClient) -> None:
     assert response.json()["code"] == "validation_failed"
 
 
+async def test_undecodable_body_uses_the_documented_validation_shape(
+    client: AsyncClient,
+) -> None:
+    response = await client.post(
+        "/api/v1/analytics/events",
+        headers={"Content-Type": "application/json"},
+        content=b"\xed\xa0\x80",
+    )
+
+    assert response.status_code == 422
+    assert response.json()["code"] == "validation_failed"
+
+
 async def test_guest_payment_status_does_not_reveal_unknown_orders(client: AsyncClient) -> None:
     response = await client.get(
         "/api/v1/orders/BS-20260829-MISSING/payment-status",

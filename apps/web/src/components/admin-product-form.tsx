@@ -6,8 +6,8 @@ import { type FormEvent, useState } from "react";
 import type { Category } from "@/lib/catalogue";
 import { readCsrfCookie } from "@/lib/admin-client";
 
-type DraftVariant = { sku: string; colour: string; size: string; displayName: string; stock: string };
-const emptyVariant = (): DraftVariant => ({ sku: "", colour: "", size: "", displayName: "", stock: "0" });
+type DraftVariant = { colour: string; size: string; displayName: string; stock: string };
+const emptyVariant = (): DraftVariant => ({ colour: "", size: "", displayName: "", stock: "0" });
 
 export function AdminProductForm({ categories }: { categories: Category[] }) {
   const router = useRouter();
@@ -38,7 +38,7 @@ export function AdminProductForm({ categories }: { categories: Category[] }) {
       status: form.get("status"),
       featured: form.get("featured") === "on",
       variants: variants.map((variant) => ({
-        sku: variant.sku,
+        sku: null,
         colour: variant.colour || null,
         size: variant.size || null,
         display_name: variant.displayName,
@@ -83,17 +83,16 @@ export function AdminProductForm({ categories }: { categories: Category[] }) {
       </section>
 
       <section className="rounded-3xl border border-[var(--line)] bg-white p-5 sm:p-7">
-        <div className="flex items-center justify-between gap-4"><div><h2 className="text-xl font-semibold">Colours, sizes and stock</h2><p className="mt-1 text-sm text-[var(--muted)]">Add one row for every option customers can choose.</p></div><button className="rounded-full border border-[var(--line)] px-4 py-2 text-sm" onClick={() => setVariants((current) => [...current, emptyVariant()])} type="button">Add option</button></div>
+        <div className="flex items-center justify-between gap-4"><div><h2 className="text-xl font-semibold">Colours, sizes and stock</h2><p className="mt-1 text-sm text-[var(--muted)]">Add one row for every option customers can choose. Product codes are generated automatically.</p></div><button className="rounded-full border border-[var(--line)] px-4 py-2 text-sm" onClick={() => setVariants((current) => [...current, emptyVariant()])} type="button">Add option</button></div>
         <div className="mt-6 grid gap-4">
           {variants.map((variant, index) => (
-            <fieldset className="grid gap-3 rounded-2xl bg-[var(--paper)] p-4 sm:grid-cols-5" key={index}>
+            <fieldset className="grid gap-3 rounded-2xl bg-[var(--paper)] p-4 sm:grid-cols-4" key={index}>
               <legend className="sr-only">Option {index + 1}</legend>
-              <label className="grid gap-1 text-xs">SKU<input className="admin-input" onChange={(event) => updateVariant(index, "sku", event.target.value)} required value={variant.sku} /></label>
               <label className="grid gap-1 text-xs">Colour<input className="admin-input" onChange={(event) => updateVariant(index, "colour", event.target.value)} value={variant.colour} /></label>
               <label className="grid gap-1 text-xs">Size<input className="admin-input" onChange={(event) => updateVariant(index, "size", event.target.value)} value={variant.size} /></label>
               <label className="grid gap-1 text-xs">Display name<input className="admin-input" onChange={(event) => updateVariant(index, "displayName", event.target.value)} required value={variant.displayName} /></label>
               <label className="grid gap-1 text-xs">Opening stock<input className="admin-input" min="0" onChange={(event) => updateVariant(index, "stock", event.target.value)} required type="number" value={variant.stock} /></label>
-              {variants.length > 1 && <button className="justify-self-start text-xs text-[var(--wine)] sm:col-span-5" onClick={() => setVariants((current) => current.filter((_, position) => position !== index))} type="button">Remove option</button>}
+              {variants.length > 1 && <button className="justify-self-start text-xs text-[var(--wine)] sm:col-span-4" onClick={() => setVariants((current) => current.filter((_, position) => position !== index))} type="button">Remove option</button>}
             </fieldset>
           ))}
         </div>

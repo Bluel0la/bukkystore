@@ -1,7 +1,10 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { formatNaira } from "@/lib/catalogue";
 import { getPaymentStatus } from "@/lib/commerce";
+
+export const metadata: Metadata = { title: "Order status" };
 
 export default async function OrderStatusPage(props: PageProps<"/orders/[orderNumber]">) {
   const [{ orderNumber }, searchParams] = await Promise.all([props.params, props.searchParams]);

@@ -40,6 +40,21 @@ def test_product_create_accepts_valid_variants() -> None:
     assert product.variants[0].initial_stock == 3
 
 
+def test_product_create_accepts_variants_without_skus() -> None:
+    product = AdminProductCreate(
+        category_id=uuid4(),
+        name="Brown Dress",
+        slug="brown-dress",
+        base_price_minor=25_000_00,
+        variants=[
+            _variant(sku=None, size="M"),
+            _variant(sku=None, size="L"),
+        ],
+    )
+
+    assert [variant.sku for variant in product.variants] == [None, None]
+
+
 @pytest.mark.parametrize(
     "variants",
     [

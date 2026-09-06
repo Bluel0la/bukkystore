@@ -1,9 +1,23 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 
 import { useCart } from "@/components/cart-provider";
+import { StoreBrand } from "@/components/store-brand";
 import { formatNaira } from "@/lib/catalogue";
+
+export function QuantityInput({ productName, quantity, onCommit }: { productName: string; quantity: number; onCommit: (value: number) => void }) {
+  const [draft, setDraft] = useState<string | null>(null);
+
+  function commit(raw: string) {
+    const value = Number(raw);
+    if (Number.isInteger(value) && value >= 1 && value <= 20) onCommit(value);
+    setDraft(null);
+  }
+
+  return <input aria-label={`Quantity for ${productName}`} className="checkout-input mt-2 block w-24" max="20" min="1" onBlur={(event) => commit(event.target.value)} onChange={(event) => setDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") (event.target as HTMLInputElement).blur(); }} type="number" value={draft ?? quantity} />;
+}
 
 export default function CartPage() {
   const cart = useCart();
@@ -12,7 +26,7 @@ export default function CartPage() {
   return (
     <main className="mx-auto min-h-screen max-w-4xl px-5 py-6 sm:px-8">
       <header className="mb-10 flex items-center justify-between border-b border-[var(--line)] pb-5">
-        <Link className="text-xl font-semibold" href="/">Atiten Kids Store</Link>
+        <StoreBrand name="Atiten Kids Store" />
         <Link className="text-sm" href="/#shop">Continue shopping</Link>
       </header>
       <div className="grid gap-10 md:grid-cols-[1fr_19rem] md:items-start">
@@ -30,7 +44,7 @@ export default function CartPage() {
                     <p className="font-medium">{formatNaira(item.priceMinor * item.quantity)}</p>
                   </div>
                   <div className="mt-5 flex items-end justify-between">
-                    <label className="text-sm">Quantity<input aria-label={`Quantity for ${item.productName}`} className="checkout-input mt-2 block w-24" max="20" min="1" onChange={(event) => cart.updateQuantity(item.variantId, Number(event.target.value))} type="number" value={item.quantity} /></label>
+                    <label className="text-sm">Quantity<QuantityInput onCommit={(value) => cart.updateQuantity(item.variantId, value)} productName={item.productName} quantity={item.quantity} /></label>
                     <button className="text-sm text-[var(--wine)] underline underline-offset-4" onClick={() => cart.removeItem(item.variantId)} type="button">Remove</button>
                   </div>
                 </article>
@@ -44,7 +58,11 @@ export default function CartPage() {
           <p className="text-sm text-white/65">Estimated subtotal</p>
           <p className="mt-2 text-3xl font-semibold">{formatNaira(subtotal)}</p>
           <p className="mt-3 text-sm leading-6 text-white/65">Delivery is calculated from your Lagos area at checkout.</p>
-          <Link aria-disabled={!cart.items.length} className={`mt-6 block rounded-full bg-white px-5 py-3 text-center font-semibold text-[var(--ink)] ${!cart.items.length ? "pointer-events-none opacity-45" : ""}`} href="/checkout">Continue to checkout</Link>
+          {cart.items.length ? (
+            <Link className="mt-6 block rounded-full bg-white px-5 py-3 text-center font-semibold text-[var(--ink)]" href="/checkout">Continue to checkout</Link>
+          ) : (
+            <p className="mt-6 rounded-full bg-white/20 px-5 py-3 text-center font-semibold text-white/60">Continue to checkout</p>
+          )}
         </aside>
       </div>
     </main>

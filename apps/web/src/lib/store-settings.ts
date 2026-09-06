@@ -47,7 +47,7 @@ function apiUrl(path: string): string {
 export async function getPublicStoreSettings(): Promise<PublicStoreSettings> {
   try {
     const response = await fetch(apiUrl("/api/v1/store-settings"), {
-      cache: "no-store",
+      next: { revalidate: 300 },
       headers: { accept: "application/json" },
     });
     if (!response.ok) return fallbackStoreSettings;

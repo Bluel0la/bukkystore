@@ -38,7 +38,7 @@ def _default_store_settings() -> StoreSetting:
 
     return StoreSetting(
         store_name="Atiten Kids Store",
-        logo_ref=None,
+        logo_ref="/atiten-logo.jpg",
         whatsapp_number="+2348121531909",
         phone_number="+2348121531909",
         instagram_url=None,

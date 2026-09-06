@@ -112,8 +112,21 @@ def create_app(
 
     @app.exception_handler(StarletteHTTPException)
     async def http_error_handler(_request: Request, exc: StarletteHTTPException) -> JSONResponse:
+        if exc.status_code == 400:
+            # FastAPI reports undecodable bodies (e.g. invalid UTF-8, which is
+            # not a JSONDecodeError) as a bare 400. Surface the documented
+            # validation shape instead so malformed requests always get one
+            # consistent, contract-tested response.
+            return JSONResponse(
+                status_code=422,
+                content={
+                    "code": "validation_failed",
+                    "message": "The request body could not be parsed.",
+                    "correlation_id": correlation_id_context.get() or "unknown",
+                },
+                headers=exc.headers,
+            )
         messages = {
-            400: "The request body could not be parsed.",
             404: "The requested resource was not found.",
             405: "The request method is not allowed.",
         }

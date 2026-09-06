@@ -121,6 +121,65 @@ def _decode_cursor(cursor: str) -> tuple[datetime, UUID]:
         raise ApiError(400, "invalid_cursor", "The product cursor is invalid.") from exc
 
 
+def _alnum_upper(value: str) -> str:
+    return "".join(char for char in value.upper() if char.isalnum())
+
+
+def generate_sku(
+    product_name: str, colour: str | None, size: str | None, *, taken: set[str]
+) -> str:
+    """Build a human-readable SKU and resolve collisions with a numeric suffix.
+
+    Brown Linen Dress + Brown + M becomes BLD-BRN-M. `taken` holds casefolded
+    SKUs already used in this request or found in the database.
+    """
+
+    words = [_alnum_upper(word) for word in product_name.split()]
+    words = [word for word in words if word]
+    if len(words) >= 2:
+        head = "".join(word[0] for word in words[:3])
+    elif words:
+        head = words[0][:3]
+    else:
+        head = "ITEM"
+    segments = [head]
+    if colour and _alnum_upper(colour):
+        segments.append(_alnum_upper(colour)[:3])
+    if size and _alnum_upper(size):
+        segments.append(_alnum_upper(size)[:8])
+    base = "-".join(segments)[:80]
+    candidate = base
+    suffix = 2
+    while candidate.casefold() in taken:
+        tail = f"-{suffix}"
+        candidate = f"{base[: 80 - len(tail)]}{tail}"
+        suffix += 1
+        if suffix > 999:
+            raise ApiError(409, "product_conflict", "A unique SKU could not be generated.")
+    taken.add(candidate.casefold())
+    return candidate
+
+
+async def _unique_generated_sku(
+    session: AsyncSession,
+    product_name: str,
+    colour: str | None,
+    size: str | None,
+    *,
+    taken: set[str],
+) -> str:
+    """Generate a SKU that is free in this request and in the database."""
+
+    for _ in range(25):
+        candidate = generate_sku(product_name, colour, size, taken=taken)
+        exists = await session.scalar(
+            select(ProductVariant.id).where(ProductVariant.sku == candidate)
+        )
+        if exists is None:
+            return candidate
+    raise ApiError(409, "product_conflict", "A unique SKU could not be generated.")
+
+
 async def list_admin_categories(session: AsyncSession) -> list[CategoryResponse]:
     categories = (
         await session.scalars(select(Category).order_by(Category.display_position, Category.name))
@@ -216,6 +275,7 @@ async def create_product(
     category = await session.get(Category, payload.category_id)
     if category is None or not category.is_active:
         raise ApiError(404, "category_not_found", "An active category was not found.")
+    taken = {item.sku.casefold() for item in payload.variants if item.sku}
     product = Product(
         id=uuid4(),
         category=category,
@@ -228,8 +288,15 @@ async def create_product(
         featured=payload.featured,
     )
     for item in payload.variants:
+        sku = item.sku.upper() if item.sku else None
+        if sku is None:
+            sku = await _unique_generated_sku(
+                session, payload.name, item.colour, item.size, taken=taken
+            )
+        else:
+            taken.add(sku.casefold())
         variant = ProductVariant(
-            sku=item.sku.upper(),
+            sku=sku,
             colour=item.colour,
             size=item.size,
             display_name=item.display_name,

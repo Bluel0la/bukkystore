@@ -3,6 +3,7 @@ import Link from "next/link";
 import { BackendStatus } from "@/components/backend-status";
 import { CartLink } from "@/components/cart-link";
 import { ProductCard } from "@/components/product-card";
+import { StoreBrand } from "@/components/store-brand";
 import { getCategories, getProducts } from "@/lib/catalogue";
 import { getPublicStoreSettings } from "@/lib/store-settings";
 
@@ -13,8 +14,10 @@ export default async function Home({ searchParams }: HomeProps) {
   const selectedCategory = typeof requestedCategory === "string" ? requestedCategory : undefined;
   const productQuery = new URLSearchParams({ limit: "8" });
   if (selectedCategory) productQuery.set("category", selectedCategory);
-  const catalogue = await Promise.all([getCategories(), getProducts(productQuery.toString())]).catch(() => null);
-  const settings = await getPublicStoreSettings();
+  const [catalogue, settings] = await Promise.all([
+    Promise.all([getCategories(), getProducts(productQuery.toString())]).catch(() => null),
+    getPublicStoreSettings(),
+  ]);
   const allCategories = catalogue?.[0] ?? [];
   const parentIds = new Set(allCategories.flatMap((category) => category.parent_id ? [category.parent_id] : []));
   const categories = allCategories.filter((category) => !parentIds.has(category.id));
@@ -23,9 +26,7 @@ export default async function Home({ searchParams }: HomeProps) {
   return (
     <main className="mx-auto min-h-screen max-w-6xl px-5 py-6 sm:px-8 lg:px-12">
       <header className="flex items-center justify-between border-b border-[var(--line)] pb-5">
-        <Link className="text-xl font-semibold tracking-[-0.03em]" href="/">
-          {settings.store_name}
-        </Link>
+        <StoreBrand name={settings.store_name} />
         <nav aria-label="Primary navigation" className="flex items-center gap-5 text-sm">
           <Link href="#shop">Shop</Link>
           <CartLink />
@@ -38,7 +39,7 @@ export default async function Home({ searchParams }: HomeProps) {
       <section className="grid gap-10 py-16 md:grid-cols-[1.2fr_0.8fr] md:items-end md:py-24">
         <div>
           <p className="mb-5 text-xs font-bold uppercase tracking-[0.22em] text-[var(--wine)]">
-            Lagos · The first edit
+            Atiten Stores · Fine Wears, we got you.
           </p>
           <h1 className="max-w-3xl text-5xl font-semibold leading-[0.95] tracking-[-0.055em] sm:text-7xl">
             Little outfits, big smiles.
@@ -56,8 +57,20 @@ export default async function Home({ searchParams }: HomeProps) {
         <h2 className="mb-5 text-2xl font-semibold tracking-[-0.03em]" id="categories-title">Shop by category</h2>
         {categories.length ? (
           <div className="flex flex-wrap gap-3">
+            <Link
+              aria-current={selectedCategory ? undefined : "page"}
+              className={`rounded-full border px-5 py-3 text-sm transition hover:border-[var(--wine)] ${selectedCategory ? "border-[var(--line)] bg-white" : "border-[var(--wine)] bg-white font-semibold"}`}
+              href="/#shop"
+            >
+              All
+            </Link>
             {categories.map((category) => (
-              <Link className="rounded-full border border-[var(--line)] bg-white px-5 py-3 text-sm transition hover:border-[var(--wine)]" href={`/?category=${category.slug}#shop`} key={category.id}>
+              <Link
+                aria-current={selectedCategory === category.slug ? "page" : undefined}
+                className={`rounded-full border px-5 py-3 text-sm transition hover:border-[var(--wine)] ${selectedCategory === category.slug ? "border-[var(--wine)] bg-white font-semibold" : "border-[var(--line)] bg-white"}`}
+                href={`/?category=${category.slug}#shop`}
+                key={category.id}
+              >
                 {category.name}
               </Link>
             ))}

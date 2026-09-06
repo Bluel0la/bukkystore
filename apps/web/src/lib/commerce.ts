@@ -7,7 +7,7 @@ function apiUrl(path: string): string {
 
 export async function getDeliveryAreas(): Promise<DeliveryArea[]> {
   const response = await fetch(apiUrl("/api/v1/delivery-areas"), {
-    cache: "no-store",
+    next: { revalidate: 300 },
     headers: { accept: "application/json" },
   });
   if (!response.ok) return [];

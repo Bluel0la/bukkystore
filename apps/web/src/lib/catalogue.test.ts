@@ -27,7 +27,7 @@ describe("catalogue client", () => {
     expect(fetchMock).toHaveBeenNthCalledWith(
       1,
       "http://api.test/api/v1/categories",
-      expect.objectContaining({ cache: "no-store" }),
+      expect.objectContaining({ next: { revalidate: 300 } }),
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
       3,

@@ -14,7 +14,6 @@ function fillForm() {
   fireEvent.change(screen.getByLabelText("Shareable slug"), { target: { value: "blue-dress" } });
   fireEvent.change(screen.getByLabelText("Selling price (₦)"), { target: { value: "25000" } });
   fireEvent.change(screen.getByLabelText("Compare-at price (₦), optional"), { target: { value: "30000" } });
-  fireEvent.change(screen.getByLabelText("SKU"), { target: { value: "BLUE-M" } });
   fireEvent.change(screen.getByLabelText("Colour"), { target: { value: "Blue" } });
   fireEvent.change(screen.getByLabelText("Size"), { target: { value: "M" } });
   fireEvent.change(screen.getByLabelText("Display name"), { target: { value: "Blue / M" } });
@@ -50,15 +49,16 @@ describe("AdminProductForm", () => {
     const request = JSON.parse(fetchMock.mock.calls[0][1].body as string);
     expect(request.base_price_minor).toBe(2_500_000);
     expect(request.compare_at_price_minor).toBe(3_000_000);
-    expect(request.variants[0]).toMatchObject({ sku: "BLUE-M", initial_stock: 4 });
+    expect(request.variants[0]).toMatchObject({ sku: null, initial_stock: 4 });
   });
 
   it("adds and removes option rows", () => {
     render(<AdminProductForm categories={categories} />);
     fireEvent.click(screen.getByRole("button", { name: "Add option" }));
-    expect(screen.getAllByLabelText("SKU")).toHaveLength(2);
+    expect(screen.getAllByLabelText("Colour")).toHaveLength(2);
     fireEvent.click(screen.getAllByRole("button", { name: "Remove option" })[0]);
-    expect(screen.getAllByLabelText("SKU")).toHaveLength(1);
+    expect(screen.getAllByLabelText("Colour")).toHaveLength(1);
+    expect(screen.queryByLabelText("SKU")).toBeNull();
   });
 
   it("shows API and network failures", async () => {

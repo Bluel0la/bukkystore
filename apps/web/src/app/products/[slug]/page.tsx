@@ -6,6 +6,7 @@ import { CartLink } from "@/components/cart-link";
 import { ProductPurchasePanel } from "@/components/product-purchase-panel";
 import { ProductGallery } from "@/components/product-gallery";
 import { ProductShare } from "@/components/product-share";
+import { StoreBrand } from "@/components/store-brand";
 import { CatalogueRequestError, formatNaira, getProduct } from "@/lib/catalogue";
 import { getPublicStoreSettings } from "@/lib/store-settings";
 
@@ -13,9 +14,11 @@ type ProductPageProps = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const product = await getProduct(slug).catch(() => null);
+  const [product, settings] = await Promise.all([
+    getProduct(slug).catch(() => null),
+    getPublicStoreSettings(),
+  ]);
   if (!product) return { title: "Product" };
-  const settings = await getPublicStoreSettings();
   const site = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
   const url = `${site}/products/${encodeURIComponent(product.slug)}`;
   const description = `${product.name} — ${formatNaira(product.price_minor)} at ${settings.store_name}. ${product.description}`;
@@ -36,6 +39,7 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
 
 export default async function ProductPage({ params }: ProductPageProps) {
   const { slug } = await params;
+  const settingsPromise = getPublicStoreSettings();
   let product;
   try {
     product = await getProduct(slug);
@@ -43,13 +47,13 @@ export default async function ProductPage({ params }: ProductPageProps) {
     if (error instanceof CatalogueRequestError && error.status === 404) notFound();
     throw error;
   }
-  const settings = await getPublicStoreSettings();
+  const settings = await settingsPromise;
 
   return (
     <main className="mx-auto min-h-screen max-w-5xl px-5 py-6 sm:px-8">
       <header className="mb-10 flex items-center justify-between border-b border-[var(--line)] pb-5">
-        <Link className="text-xl font-semibold" href="/">Atiten Kids Store</Link>
-        <nav className="flex items-center gap-5 text-sm"><Link href="/#shop">Back to shop</Link><CartLink /></nav>
+        <StoreBrand name="Atiten Kids Store" />
+        <nav aria-label="Product navigation" className="flex items-center gap-5 text-sm"><Link href="/#shop">Back to shop</Link><CartLink /></nav>
       </header>
       <div className="grid gap-10 md:grid-cols-2 md:items-start">
         <ProductGallery images={product.images} />

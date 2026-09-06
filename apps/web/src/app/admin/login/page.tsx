@@ -1,8 +1,11 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { AdminLoginForm } from "@/components/admin-login-form";
 import { getAdminUser } from "@/lib/admin";
+
+export const metadata: Metadata = { title: "Admin sign in" };
 
 export default async function AdminLoginPage() {
   if (await getAdminUser()) redirect("/admin");

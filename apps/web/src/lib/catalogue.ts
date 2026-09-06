@@ -49,9 +49,9 @@ function apiUrl(path: string): string {
   return `${baseUrl.replace(/\/$/, "")}${path}`;
 }
 
-async function request<T>(path: string): Promise<T> {
+async function request<T>(path: string, revalidate: number): Promise<T> {
   const response = await fetch(apiUrl(path), {
-    cache: "no-store",
+    next: { revalidate },
     headers: { accept: "application/json" },
   });
   if (!response.ok) {
@@ -61,15 +61,15 @@ async function request<T>(path: string): Promise<T> {
 }
 
 export function getCategories(): Promise<Category[]> {
-  return request<Category[]>("/api/v1/categories");
+  return request<Category[]>("/api/v1/categories", 300);
 }
 
 export function getProducts(query = ""): Promise<ProductPage> {
-  return request<ProductPage>(`/api/v1/products${query ? `?${query}` : ""}`);
+  return request<ProductPage>(`/api/v1/products${query ? `?${query}` : ""}`, 300);
 }
 
 export function getProduct(slug: string): Promise<ProductDetail> {
-  return request<ProductDetail>(`/api/v1/products/${encodeURIComponent(slug)}`);
+  return request<ProductDetail>(`/api/v1/products/${encodeURIComponent(slug)}`, 60);
 }
 
 export function formatNaira(priceMinor: number): string {

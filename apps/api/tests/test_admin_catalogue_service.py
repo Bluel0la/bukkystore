@@ -22,6 +22,7 @@ from bukkystore_api.admin_catalogue.service import (
     archive_product,
     create_category,
     create_product,
+    generate_sku,
     get_admin_product,
     list_admin_categories,
     list_admin_products,
@@ -184,6 +185,81 @@ async def test_create_product_builds_initial_stock_ledger() -> None:
     assert created.variants[0].stock_on_hand == 3
     product = session.add.call_args.args[0]
     assert len(product.variants[0].movements) == 1
+
+
+def test_generate_sku_builds_initials_codes() -> None:
+    assert generate_sku("Brown Linen Dress", "Brown", "M", taken=set()) == "BLD-BRO-M"
+    assert generate_sku("Black Evening Heel", "Black", "38", taken=set()) == "BEH-BLA-38"
+    assert generate_sku("Cream Day Bag", "Cream", None, taken=set()) == "CDB-CRE"
+    assert generate_sku("Kaftan", None, None, taken=set()) == "KAF"
+    assert generate_sku("  ", None, None, taken=set()) == "ITEM"
+
+
+def test_generate_sku_resolves_collisions_with_suffixes() -> None:
+    taken = {"bld-bro-m"}
+    assert generate_sku("Brown Linen Dress", "Brown", "M", taken=taken) == "BLD-BRO-M-2"
+    assert generate_sku("Brown Linen Dress", "Brown", "M", taken=taken) == "BLD-BRO-M-3"
+
+
+async def test_create_product_generates_missing_skus() -> None:
+    category = Category(id=uuid4(), name="Dresses", slug="dresses", is_active=True)
+    session = MagicMock(spec=AsyncSession)
+    session.get = AsyncMock(return_value=category)
+    session.scalar = AsyncMock(return_value=None)
+
+    async def commit() -> None:
+        product = session.add.call_args.args[0]
+        product.id = uuid4()
+        product.created_at = datetime.now(UTC)
+        product.updated_at = datetime.now(UTC)
+        product.currency = "NGN"
+        for variant in product.variants:
+            variant.id = uuid4()
+
+    session.commit = AsyncMock(side_effect=commit)
+    payload = AdminProductCreate(
+        category_id=category.id,
+        name="Brown Linen Dress",
+        slug="brown-linen-dress",
+        base_price_minor=20_000_00,
+        variants=[
+            AdminVariantCreate(display_name="Brown / M", colour="Brown", size="M"),
+            AdminVariantCreate(display_name="Brown / L", colour="Brown", size="L"),
+        ],
+    )
+
+    created = await create_product(session, payload, uuid4())
+
+    assert [variant.sku for variant in created.variants] == ["BLD-BRO-M", "BLD-BRO-L"]
+
+
+async def test_create_product_escalates_past_database_skus() -> None:
+    category = Category(id=uuid4(), name="Dresses", slug="dresses", is_active=True)
+    session = MagicMock(spec=AsyncSession)
+    session.get = AsyncMock(return_value=category)
+    session.scalar = AsyncMock(side_effect=[uuid4(), None])
+
+    async def commit() -> None:
+        product = session.add.call_args.args[0]
+        product.id = uuid4()
+        product.created_at = datetime.now(UTC)
+        product.updated_at = datetime.now(UTC)
+        product.currency = "NGN"
+        for variant in product.variants:
+            variant.id = uuid4()
+
+    session.commit = AsyncMock(side_effect=commit)
+    payload = AdminProductCreate(
+        category_id=category.id,
+        name="Brown Linen Dress",
+        slug="brown-linen-dress",
+        base_price_minor=20_000_00,
+        variants=[AdminVariantCreate(display_name="Brown / M", colour="Brown", size="M")],
+    )
+
+    created = await create_product(session, payload, uuid4())
+
+    assert created.variants[0].sku == "BLD-BRO-M-2"
 
 
 async def test_create_product_rejects_missing_category() -> None:
