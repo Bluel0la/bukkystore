@@ -2,6 +2,7 @@ export type CartItem = {
   variantId: string;
   productName: string;
   productSlug: string;
+  categorySlug: string | null;
   variantName: string;
   priceMinor: number;
   quantity: number;

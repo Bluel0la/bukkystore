@@ -5,7 +5,7 @@ import { CartProvider, useCart } from "@/components/cart-provider";
 
 function CartHarness() {
   const cart = useCart();
-  return <div><span>{cart.isReady ? "ready" : "loading"}</span><span>{cart.itemCount}</span><button onClick={() => cart.addItem({ variantId: "variant-1", productName: "Dress", productSlug: "dress", variantName: "Brown / M", priceMinor: 100, quantity: 1 })}>Add</button><button onClick={() => cart.updateQuantity("variant-1", 3)}>Three</button><button onClick={() => cart.removeItem("variant-1")}>Remove</button></div>;
+  return <div><span>{cart.isReady ? "ready" : "loading"}</span><span>{cart.itemCount}</span><button onClick={() => cart.addItem({ variantId: "variant-1", productName: "Dress", productSlug: "dress", categorySlug: "dresses", variantName: "Brown / M", priceMinor: 100, quantity: 1 })}>Add</button><button onClick={() => cart.updateQuantity("variant-1", 3)}>Three</button><button onClick={() => cart.removeItem("variant-1")}>Remove</button></div>;
 }
 
 describe("CartProvider", () => {

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { useCart } from "@/components/cart-provider";
+import { RelatedProducts } from "@/components/related-products";
 import { StoreBrand } from "@/components/store-brand";
 import { formatNaira } from "@/lib/catalogue";
 
@@ -65,6 +66,7 @@ export default function CartPage() {
           )}
         </aside>
       </div>
+      <RelatedProducts />
     </main>
   );
 }

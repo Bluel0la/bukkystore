@@ -21,6 +21,7 @@ export function ProductPurchasePanel({ product }: { product: ProductDetail }) {
       variantId: selected.id,
       productName: product.name,
       productSlug: product.slug,
+      categorySlug: product.category.slug,
       variantName: selected.display_name,
       priceMinor: selected.price_minor,
       quantity,

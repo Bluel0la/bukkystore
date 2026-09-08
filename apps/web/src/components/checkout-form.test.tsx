@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CheckoutForm } from "@/components/checkout-form";
 
 const clear = vi.fn();
-const cart = { items: [{ variantId: "variant-id", productName: "Brown Dress", productSlug: "brown-dress", variantName: "Brown / M", priceMinor: 1_850_000, quantity: 1 }], itemCount: 1, isReady: true, clear, addItem: vi.fn(), replaceWith: vi.fn(), updateQuantity: vi.fn(), removeItem: vi.fn() };
+const cart = { items: [{ variantId: "variant-id", productName: "Brown Dress", productSlug: "brown-dress", categorySlug: "dresses", variantName: "Brown / M", priceMinor: 1_850_000, quantity: 1 }], itemCount: 1, isReady: true, clear, addItem: vi.fn(), replaceWith: vi.fn(), updateQuantity: vi.fn(), removeItem: vi.fn() };
 vi.mock("@/components/cart-provider", () => ({ useCart: () => cart }));
 
 const areas = [{ id: "area-id", name: "Lagos Mainland", fee_minor: 300_000, currency: "NGN" as const }];
