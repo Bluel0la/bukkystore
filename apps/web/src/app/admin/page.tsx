@@ -41,6 +41,7 @@ export default async function AdminPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Link className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm" href="/">View store</Link>
+          <Link className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm" href="/admin/products">Products</Link>
           <Link className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm" href="/admin/settings">Settings</Link>
           <Link className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm" href="/admin/delivery">Delivery</Link>
           <Link className="admin-primary" href="/admin/products/new">Add product</Link>

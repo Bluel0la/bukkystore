@@ -371,7 +371,10 @@ async def update_product(
     return _product_response(product)
 
 
-async def archive_product(session: AsyncSession, product_id: UUID) -> AdminProductResponse:
+async def _locked_product(session: AsyncSession, product_id: UUID) -> Product:
+    # NOTE: the lock and the eager loads must not produce a JOIN. PostgreSQL
+    # rejects bare FOR UPDATE over an outer join, so everything here uses
+    # selectinload (separate queries, same no-N+1 guarantee).
     product = (
         (
             await session.scalars(
@@ -379,7 +382,7 @@ async def archive_product(session: AsyncSession, product_id: UUID) -> AdminProdu
                 .where(Product.id == product_id)
                 .with_for_update()
                 .options(
-                    joinedload(Product.category),
+                    selectinload(Product.category),
                     selectinload(Product.variants),
                     selectinload(Product.images),
                 )
@@ -390,11 +393,55 @@ async def archive_product(session: AsyncSession, product_id: UUID) -> AdminProdu
     )
     if product is None:
         raise ApiError(404, "product_not_found", "The product was not found.")
+    return product
+
+
+async def archive_product(session: AsyncSession, product_id: UUID) -> AdminProductResponse:
+    product = await _locked_product(session, product_id)
     product.status = ProductStatus.ARCHIVED
     for variant in product.variants:
         variant.status = VariantStatus.ARCHIVED
     await session.commit()
     return _product_response(product)
+
+
+async def unarchive_product(session: AsyncSession, product_id: UUID) -> AdminProductResponse:
+    """Restore an archived product (and its variants) to published status."""
+
+    product = await _locked_product(session, product_id)
+    product.status = ProductStatus.ACTIVE
+    for variant in product.variants:
+        variant.status = VariantStatus.ACTIVE
+    await session.commit()
+    return _product_response(product)
+
+
+async def bulk_set_archived(
+    session: AsyncSession, product_ids: list[UUID], *, archived: bool
+) -> list[UUID]:
+    """Archive or restore many products atomically. Fails fast on unknown ids."""
+
+    # NOTE: no joinedload here — PostgreSQL rejects bare FOR UPDATE over the
+    # outer join it produces.
+    products = (
+        await session.scalars(
+            select(Product)
+            .where(Product.id.in_(product_ids))
+            .with_for_update()
+            .options(selectinload(Product.variants))
+        )
+    ).all()
+    found = {product.id for product in products}
+    if len(found) != len(set(product_ids)):
+        raise ApiError(404, "product_not_found", "One or more products were not found.")
+    target_product = ProductStatus.ARCHIVED if archived else ProductStatus.ACTIVE
+    target_variant = VariantStatus.ARCHIVED if archived else VariantStatus.ACTIVE
+    for product in products:
+        product.status = target_product
+        for variant in product.variants:
+            variant.status = target_variant
+    await session.commit()
+    return sorted(product_ids)
 
 
 async def adjust_stock(

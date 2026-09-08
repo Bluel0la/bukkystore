@@ -138,12 +138,15 @@ async def create_checkout(
     requested = {item.variant_id: item.quantity for item in payload.items}
     variants = list(
         (
+            # NOTE: no joinedload here — PostgreSQL rejects bare FOR UPDATE
+            # over the outer join it produces. selectinload keeps the lock
+            # on variants only with the same no-N+1 guarantee.
             await session.scalars(
                 select(ProductVariant)
                 .where(ProductVariant.id.in_(sorted(requested)))
                 .order_by(ProductVariant.id)
                 .with_for_update()
-                .options(joinedload(ProductVariant.product))
+                .options(selectinload(ProductVariant.product))
             )
         ).all()
     )
@@ -357,6 +360,8 @@ def _confirmation_hash(confirmation: PaymentConfirmation) -> str:
 
 
 async def _locked_payment(session: AsyncSession, internal_reference: str) -> Payment | None:
+    # NOTE: no joinedload here — PostgreSQL rejects bare FOR UPDATE over the
+    # outer joins it produces. selectinload keeps the lock on payments only.
     return (
         (
             await session.scalars(
@@ -364,8 +369,8 @@ async def _locked_payment(session: AsyncSession, internal_reference: str) -> Pay
                 .where(Payment.internal_reference == internal_reference)
                 .with_for_update()
                 .options(
-                    joinedload(Payment.order)
-                    .joinedload(Order.reservation)
+                    selectinload(Payment.order)
+                    .selectinload(Order.reservation)
                     .selectinload(InventoryReservation.items)
                 )
             )

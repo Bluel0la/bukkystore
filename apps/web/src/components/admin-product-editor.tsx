@@ -49,6 +49,9 @@ export function AdminProductEditor({ product, categories }: { product: AdminProd
   const router = useRouter();
   const [message, setMessage] = useState("");
   const [pending, setPending] = useState(false);
+  const [confirmingArchive, setConfirmingArchive] = useState(false);
+  const [archiveError, setArchiveError] = useState("");
+  const [archiving, setArchiving] = useState(false);
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -70,6 +73,67 @@ export function AdminProductEditor({ product, categories }: { product: AdminProd
     if (response.ok) router.refresh();
   }
 
+  async function readError(response: Response, fallback: string): Promise<string> {
+    try {
+      const body = (await response.json()) as { message?: string; code?: string };
+      const detail = [body.code, body.message ?? fallback].filter(Boolean).join(" · ");
+      return `${fallback} (HTTP ${response.status} · ${detail}).`;
+    } catch {
+      return `${fallback} (HTTP ${response.status}).`;
+    }
+  }
+
+  async function archive() {
+    const csrf = readCsrfCookie();
+    if (!csrf) {
+      setArchiveError("Your session expired.");
+      return;
+    }
+    setArchiving(true);
+    setArchiveError("");
+    try {
+      const response = await fetch(`/api/admin/products/${product.id}/archive`, {
+        method: "POST",
+        headers: { "X-CSRF-Token": csrf },
+      });
+      if (!response.ok) {
+        setArchiveError(await readError(response, "Product could not be archived"));
+        return;
+      }
+      setConfirmingArchive(false);
+      router.refresh();
+    } catch {
+      setArchiveError("Product could not be archived. Please try again.");
+    } finally {
+      setArchiving(false);
+    }
+  }
+
+  async function restore() {
+    const csrf = readCsrfCookie();
+    if (!csrf) {
+      setArchiveError("Your session expired.");
+      return;
+    }
+    setArchiving(true);
+    setArchiveError("");
+    try {
+      const response = await fetch(`/api/admin/products/${product.id}/unarchive`, {
+        method: "POST",
+        headers: { "X-CSRF-Token": csrf },
+      });
+      if (!response.ok) {
+        setArchiveError(await readError(response, "Product could not be restored"));
+        return;
+      }
+      router.refresh();
+    } catch {
+      setArchiveError("Product could not be restored. Please try again.");
+    } finally {
+      setArchiving(false);
+    }
+  }
+
   return (
     <div className="grid gap-8">
       <AdminProductPhotos initialImages={product.images} productId={product.id} productName={product.name} />
@@ -79,6 +143,31 @@ export function AdminProductEditor({ product, categories }: { product: AdminProd
         {message && <p className="text-sm" role="status">{message}</p>}<button className="admin-primary justify-self-start" disabled={pending} type="submit">{pending ? "Saving…" : "Save details"}</button>
       </form>
       <section><div className="mb-4"><h2 className="text-xl font-semibold">Stock by option</h2><p className="mt-1 text-sm text-(--muted)">Use a positive number to add stock or a negative number to correct it down.</p></div><div className="grid gap-3">{product.variants.map((variant) => <StockAdjustment key={variant.id} variant={variant} />)}</div></section>
+      <section aria-labelledby="danger-zone-heading" className="rounded-3xl border border-[var(--wine)]/40 bg-white p-5 sm:p-7">
+        <h2 className="text-xl font-semibold" id="danger-zone-heading">Danger zone</h2>
+        {product.status === "ARCHIVED" ? (
+          <div>
+            <p className="mt-2 text-sm text-(--muted)">This product is archived. It is hidden from the storefront but kept for order history.</p>
+            <button className="mt-4 rounded-full border border-[var(--line)] bg-white px-5 py-2 text-sm font-semibold" disabled={archiving} onClick={restore} type="button">{archiving ? "Restoring…" : "Restore to published"}</button>
+            {archiveError && <p className="mt-3 text-sm text-(--wine)" role="alert">{archiveError}</p>}
+          </div>
+        ) : confirmingArchive ? (
+          <div>
+            <p className="mt-2 text-sm">Archive <strong>{product.name}</strong>? It will disappear from the storefront immediately. This cannot be undone from here.</p>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <button className="rounded-full bg-[var(--wine)] px-5 py-2 text-sm font-semibold text-white disabled:opacity-50" disabled={archiving} onClick={archive} type="button">{archiving ? "Archiving…" : "Yes, archive it"}</button>
+              <button className="rounded-full border border-[var(--line)] px-5 py-2 text-sm" disabled={archiving} onClick={() => setConfirmingArchive(false)} type="button">Keep it</button>
+            </div>
+            {archiveError && <p className="mt-3 text-sm text-(--wine)" role="alert">{archiveError}</p>}
+          </div>
+        ) : (
+          <div>
+            <p className="mt-2 text-sm text-(--muted)">Archiving hides the product from shoppers while preserving past orders.</p>
+            <button className="mt-4 rounded-full border border-[var(--wine)] px-5 py-2 text-sm font-semibold text-(--wine)" onClick={() => { setArchiveError(""); setConfirmingArchive(true); }} type="button">Archive product</button>
+            {archiveError && <p className="mt-3 text-sm text-(--wine)" role="alert">{archiveError}</p>}
+          </div>
+        )}
+      </section>
     </div>
   );
 }

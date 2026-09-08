@@ -38,6 +38,24 @@ class AdminCategoryUpdate(AdminCatalogueSchema):
         return self
 
 
+class BulkArchiveRequest(AdminCatalogueSchema):
+    """Archive or restore up to 50 products in one atomic operation."""
+
+    product_ids: list[UUID] = Field(min_length=1, max_length=50)
+    archived: bool
+
+    @model_validator(mode="after")
+    def reject_duplicate_ids(self) -> Self:
+        if len(set(self.product_ids)) != len(self.product_ids):
+            raise ValueError("Product ids must be unique")
+        return self
+
+
+class BulkArchiveResponse(AdminCatalogueSchema):
+    archived: bool
+    product_ids: list[UUID]
+
+
 class AdminVariantCreate(AdminCatalogueSchema):
     sku: Annotated[ShortText, StringConstraints(max_length=80)] | None = Field(
         default=None,

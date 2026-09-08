@@ -3,7 +3,11 @@ from __future__ import annotations
 import schemathesis
 from hypothesis import HealthCheck, settings
 from schemathesis import Case
-from schemathesis.specs.openapi.checks import missing_required_header, negative_data_rejection
+from schemathesis.specs.openapi.checks import (
+    missing_required_header,
+    negative_data_rejection,
+    unsupported_method,
+)
 
 from bukkystore_api.config import Settings
 from bukkystore_api.main import create_app
@@ -63,6 +67,13 @@ def test_openapi_operations_do_not_violate_the_contract(case: Case) -> None:
         # normalization. Skip only the negative-data check; every other
         # contract check still applies.
         case.call_and_validate(excluded_checks=[negative_data_rejection])
+        return
+    if case.operation.path == "/api/v1/admin/products/bulk-archive":
+        # PATCH probes share a prefix with PATCH /products/{product_id}, so
+        # FastAPI runs authentication before path-param validation and answers
+        # 401 instead of 405. Auth-first is the safer behavior; skip only the
+        # unsupported-method check.
+        case.call_and_validate(excluded_checks=[unsupported_method])
         return
     case.call_and_validate()
 

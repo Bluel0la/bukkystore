@@ -20,12 +20,14 @@ from bukkystore_api.admin_catalogue.schemas import (
 from bukkystore_api.admin_catalogue.service import (
     adjust_stock,
     archive_product,
+    bulk_set_archived,
     create_category,
     create_product,
     generate_sku,
     get_admin_product,
     list_admin_categories,
     list_admin_products,
+    unarchive_product,
     update_category,
     update_product,
 )
@@ -311,6 +313,57 @@ async def test_update_and_archive_product() -> None:
     assert updated.name == "Updated Dress"
     assert archived.status is ProductStatus.ARCHIVED
     assert archived.variants[0].status is VariantStatus.ARCHIVED
+
+
+async def test_unarchive_product_restores_published_status() -> None:
+    product = _product()
+    product.status = ProductStatus.ARCHIVED
+    product.variants[0].status = VariantStatus.ARCHIVED
+    session = MagicMock(spec=AsyncSession)
+    session.scalars = AsyncMock(return_value=ScalarItems([product]))
+    session.commit = AsyncMock()
+
+    restored = await unarchive_product(session, product.id)
+
+    assert restored.status is ProductStatus.ACTIVE
+    assert restored.variants[0].status is VariantStatus.ACTIVE
+    session.scalars = AsyncMock(return_value=ScalarItems([]))
+    with pytest.raises(ApiError) as error:
+        await unarchive_product(session, uuid4())
+    assert error.value.code == "product_not_found"
+
+
+async def test_bulk_archive_and_restore_are_atomic() -> None:
+    first, second = _product(), _product()
+    session = MagicMock(spec=AsyncSession)
+    session.scalars = AsyncMock(side_effect=[ScalarItems([first, second]), ScalarItems([first])])
+    session.commit = AsyncMock()
+
+    archived_ids = await bulk_set_archived(session, [second.id, first.id], archived=True)
+
+    assert archived_ids == sorted([first.id, second.id])
+    assert first.status is ProductStatus.ARCHIVED
+    assert second.variants[0].status is VariantStatus.ARCHIVED
+    session.commit.assert_awaited_once()
+
+    restored_ids = await bulk_set_archived(session, [first.id], archived=False)
+
+    assert restored_ids == [first.id]
+    assert first.status is ProductStatus.ACTIVE
+
+
+async def test_bulk_archive_fails_fast_on_unknown_id() -> None:
+    product = _product()
+    session = MagicMock(spec=AsyncSession)
+    session.scalars = AsyncMock(return_value=ScalarItems([product]))
+    session.commit = AsyncMock()
+
+    with pytest.raises(ApiError) as error:
+        await bulk_set_archived(session, [product.id, uuid4()], archived=True)
+
+    assert error.value.code == "product_not_found"
+    assert product.status is ProductStatus.ACTIVE
+    session.commit.assert_not_awaited()
 
 
 async def test_update_rejects_missing_or_invalid_product_state() -> None:

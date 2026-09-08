@@ -57,6 +57,24 @@ describe("admin server client", () => {
     expect(fetchMock.mock.calls[9][0]).toContain("/analytics/products/product%2Fid?days=30");
   });
 
+  it("builds product list filters into the query string", async () => {
+    const fetchMock = vi.fn().mockImplementation(async () =>
+      new Response(JSON.stringify({ items: [], next_cursor: null }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await getAdminProducts({ search: "dress", status: "ARCHIVED" });
+
+    const url = fetchMock.mock.calls[0][0] as string;
+    expect(url).toContain("/products?");
+    expect(url).toContain("search=dress");
+    expect(url).toContain("status=ARCHIVED");
+    expect(url).toContain("limit=100");
+  });
+
   it("returns null for an expired or forbidden session", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 401 })));
     await expect(adminRequest("/products")).resolves.toBeNull();

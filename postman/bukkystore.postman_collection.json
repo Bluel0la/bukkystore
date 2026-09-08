@@ -917,6 +917,46 @@
           ]
         },
         {
+          "name": "Archive product",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "X-CSRF-Token", "value": "{{csrf_token}}" }],
+            "url": { "raw": "{{base_url}}/api/v1/admin/products/{{admin_product_id}}/archive", "host": ["{{base_url}}"], "path": ["api", "v1", "admin", "products", "{{admin_product_id}}", "archive"] },
+            "description": "Archives a product and its variants. Disabled by default because it hides the product from the storefront."
+          },
+          "event": [{ "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["if (String(pm.environment.get('run_catalogue_write')).toLowerCase() !== 'true' || !pm.environment.get('admin_product_id')) { pm.execution.skipRequest(); }"] } }, { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('archives the product', function () { pm.expect(pm.response.json().status).to.eql('ARCHIVED'); });"
+            ] } }]
+        },
+        {
+          "name": "Unarchive product",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "X-CSRF-Token", "value": "{{csrf_token}}" }],
+            "url": { "raw": "{{base_url}}/api/v1/admin/products/{{admin_product_id}}/unarchive", "host": ["{{base_url}}"], "path": ["api", "v1", "admin", "products", "{{admin_product_id}}", "unarchive"] },
+            "description": "Restores an archived product and its variants to published."
+          },
+          "event": [{ "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["if (String(pm.environment.get('run_catalogue_write')).toLowerCase() !== 'true' || !pm.environment.get('admin_product_id')) { pm.execution.skipRequest(); }"] } }, { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('restores the product', function () { pm.expect(pm.response.json().status).to.eql('ACTIVE'); });"
+            ] } }]
+        },
+        {
+          "name": "Bulk archive products",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }],
+            "body": { "mode": "raw", "raw": "{\"product_ids\": [\"{{admin_product_id}}\"], \"archived\": true}" },
+            "url": { "raw": "{{base_url}}/api/v1/admin/products/bulk-archive", "host": ["{{base_url}}"], "path": ["api", "v1", "admin", "products", "bulk-archive"] },
+            "description": "Archives or restores up to 50 products atomically. Disabled by default because it hides products from the storefront."
+          },
+          "event": [{ "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["if (String(pm.environment.get('run_catalogue_write')).toLowerCase() !== 'true' || !pm.environment.get('admin_product_id')) { pm.execution.skipRequest(); }"] } }, { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('archives the batch', function () { const body = pm.response.json(); pm.expect(body.archived).to.be.true; pm.expect(body.product_ids).to.have.lengthOf(1); });"
+            ] } }]
+        },
+        {
           "name": "List admin orders",
           "request": {
             "method": "GET",

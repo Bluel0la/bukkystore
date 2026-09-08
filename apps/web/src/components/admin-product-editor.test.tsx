@@ -5,7 +5,8 @@ import { AdminProductEditor } from "@/components/admin-product-editor";
 import type { AdminProduct } from "@/lib/admin-types";
 
 const refresh = vi.fn();
-vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
+const push = vi.fn();
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh, push }) }));
 
 const product: AdminProduct = {
   id: "product-id",
@@ -32,6 +33,7 @@ const categories = [product.category];
 describe("AdminProductEditor", () => {
   beforeEach(() => {
     refresh.mockReset();
+    push.mockReset();
     document.cookie = "bukky_admin_csrf=csrf-token; path=/";
     vi.stubGlobal("crypto", { randomUUID: vi.fn(() => "idempotency-key") });
   });
@@ -90,5 +92,74 @@ describe("AdminProductEditor", () => {
     document.cookie = "bukky_admin_csrf=; Max-Age=0; path=/";
     fireEvent.click(screen.getByRole("button", { name: "Save details" }));
     await screen.findByText("Your session expired.");
+  });
+
+  it("archives a product in place and refreshes its state", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    render(<AdminProductEditor categories={categories} product={product} />);
+    fireEvent.click(screen.getByRole("button", { name: "Archive product" }));
+    fireEvent.click(screen.getByRole("button", { name: "Yes, archive it" }));
+
+    await waitFor(() => expect(refresh).toHaveBeenCalled());
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/admin/products/product-id/archive");
+    expect(fetchMock.mock.calls[0][1].method).toBe("POST");
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it("restores an archived product", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    render(
+      <AdminProductEditor categories={categories} product={{ ...product, status: "ARCHIVED" }} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Restore to published" }));
+
+    await waitFor(() => expect(refresh).toHaveBeenCalled());
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/admin/products/product-id/unarchive");
+  });
+
+  it("cancels archiving and reports archive failures", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ message: "Already gone." }), {
+        status: 404,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    render(<AdminProductEditor categories={categories} product={product} />);
+    fireEvent.click(screen.getByRole("button", { name: "Archive product" }));
+    fireEvent.click(screen.getByRole("button", { name: "Keep it" }));
+    expect(push).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Archive product" }));
+    fireEvent.click(screen.getByRole("button", { name: "Yes, archive it" }));
+    await screen.findByText(/Already gone\./);
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it("reports archive failures with status and server code", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ code: "internal_error", message: "Boom." }), {
+        status: 500,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    render(<AdminProductEditor categories={categories} product={product} />);
+    fireEvent.click(screen.getByRole("button", { name: "Archive product" }));
+    fireEvent.click(screen.getByRole("button", { name: "Yes, archive it" }));
+
+    await screen.findByText(/HTTP 500 · internal_error/);
+    expect(refresh).not.toHaveBeenCalled();
+  });
+
+  it("shows archived state without an archive button", () => {
+    render(
+      <AdminProductEditor categories={categories} product={{ ...product, status: "ARCHIVED" }} />,
+    );
+    expect(screen.getByText(/hidden from the storefront/)).toBeDefined();
+    expect(screen.queryByRole("button", { name: "Archive product" })).toBeNull();
   });
 });

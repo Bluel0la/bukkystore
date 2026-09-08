@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from uuid import uuid4
+
 from httpx import AsyncClient
 
 from bukkystore_api.auth.models import UserRole
@@ -12,6 +14,20 @@ async def test_admin_catalogue_requires_authentication(client: AsyncClient) -> N
 
     assert response.status_code == 401
     assert response.json()["code"] == "authentication_required"
+
+
+async def test_product_archive_routes_require_authentication(client: AsyncClient) -> None:
+    product_id = str(uuid4())
+    archive = await client.post(f"/api/v1/admin/products/{product_id}/archive")
+    unarchive = await client.post(f"/api/v1/admin/products/{product_id}/unarchive")
+    bulk = await client.post(
+        "/api/v1/admin/products/bulk-archive",
+        json={"product_ids": [product_id], "archived": True},
+    )
+
+    for response in (archive, unarchive, bulk):
+        assert response.status_code == 401
+        assert response.json()["code"] == "authentication_required"
 
 
 async def test_admin_orders_require_authentication(client: AsyncClient) -> None:

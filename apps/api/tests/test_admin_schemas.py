@@ -10,6 +10,7 @@ from bukkystore_api.admin_catalogue.schemas import (
     AdminProductCreate,
     AdminProductUpdate,
     AdminVariantCreate,
+    BulkArchiveRequest,
     StockAdjustmentRequest,
 )
 from bukkystore_api.catalogue.models import ProductStatus
@@ -111,6 +112,25 @@ def test_product_update_allows_clearing_compare_at_price() -> None:
     payload = AdminProductUpdate(compare_at_price_minor=None)
 
     assert payload.model_fields_set == {"compare_at_price_minor"}
+
+
+def test_bulk_archive_rejects_empty_duplicate_or_missing_ids() -> None:
+    shared = uuid4()
+    payloads = [
+        {"product_ids": [], "archived": True},
+        {"product_ids": [shared, shared], "archived": True},
+        {"archived": True},
+        {"product_ids": [uuid4()] * 51, "archived": False},
+    ]
+    for payload in payloads:
+        with pytest.raises(ValidationError):
+            BulkArchiveRequest.model_validate(payload)
+
+
+def test_bulk_archive_accepts_bounded_unique_ids() -> None:
+    request = BulkArchiveRequest(product_ids=[uuid4()], archived=False)
+
+    assert request.archived is False
 
 
 def test_product_create_requires_archive_action() -> None:

@@ -15,6 +15,8 @@ from bukkystore_api.admin_catalogue.schemas import (
     AdminProductPage,
     AdminProductResponse,
     AdminProductUpdate,
+    BulkArchiveRequest,
+    BulkArchiveResponse,
     ImageUploadSignatureResponse,
     ProductImageRegisterRequest,
     ProductImageReorderRequest,
@@ -25,6 +27,7 @@ from bukkystore_api.admin_catalogue.schemas import (
 from bukkystore_api.admin_catalogue.service import (
     adjust_stock,
     archive_product,
+    bulk_set_archived,
     create_category,
     create_image_upload_signature,
     create_product,
@@ -34,6 +37,7 @@ from bukkystore_api.admin_catalogue.service import (
     register_product_image,
     remove_product_image,
     reorder_product_images,
+    unarchive_product,
     update_category,
     update_product,
     update_product_image,
@@ -123,6 +127,27 @@ async def product_archive(
     product_id: UUID, session: Session, _admin: MutatingAdmin
 ) -> AdminProductResponse:
     return await archive_product(session, product_id)
+
+
+@router.post("/products/{product_id}/unarchive", response_model=AdminProductResponse)
+async def product_unarchive(
+    product_id: UUID, session: Session, _admin: MutatingAdmin
+) -> AdminProductResponse:
+    return await unarchive_product(session, product_id)
+
+
+@router.post(
+    "/products/bulk-archive",
+    response_model=BulkArchiveResponse,
+    responses={404: {"model": ErrorResponse}},
+)
+async def products_bulk_archive(
+    payload: BulkArchiveRequest, session: Session, _admin: MutatingAdmin
+) -> BulkArchiveResponse:
+    """Archive or restore many products atomically; fails fast on unknown ids."""
+
+    updated = await bulk_set_archived(session, payload.product_ids, archived=payload.archived)
+    return BulkArchiveResponse(archived=payload.archived, product_ids=updated)
 
 
 @router.post(

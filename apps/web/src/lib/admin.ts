@@ -34,8 +34,14 @@ export function getAdminUser(): Promise<AdminUser | null> {
   return adminRequest<AdminUser>("/auth/me");
 }
 
-export function getAdminProducts(): Promise<AdminProductPage | null> {
-  return adminRequest<AdminProductPage>("/products?limit=100");
+export function getAdminProducts(filters: {
+  search?: string;
+  status?: "DRAFT" | "ACTIVE" | "ARCHIVED";
+} = {}): Promise<AdminProductPage | null> {
+  const query = new URLSearchParams({ limit: "100" });
+  if (filters.search) query.set("search", filters.search);
+  if (filters.status) query.set("status", filters.status);
+  return adminRequest<AdminProductPage>(`/products?${query}`);
 }
 
 export function getAdminProduct(productId: string): Promise<AdminProduct | null> {

@@ -7,7 +7,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy.orm import selectinload
 
 from bukkystore_api.admin_orders.schemas import (
     AdminOrderDetail,
@@ -168,6 +168,8 @@ async def get_admin_order(session: AsyncSession, order_id: UUID) -> AdminOrderDe
 
 
 async def _locked_order(session: AsyncSession, order_id: UUID) -> Order:
+    # NOTE: no joinedload here — PostgreSQL rejects bare FOR UPDATE over the
+    # outer join it produces. selectinload keeps the lock on orders only.
     order = (
         (
             await session.scalars(
@@ -178,7 +180,7 @@ async def _locked_order(session: AsyncSession, order_id: UUID) -> Order:
                     selectinload(Order.items),
                     selectinload(Order.payments),
                     selectinload(Order.refunds),
-                    joinedload(Order.reservation).selectinload(InventoryReservation.items),
+                    selectinload(Order.reservation).selectinload(InventoryReservation.items),
                 )
             )
         )
@@ -423,10 +425,12 @@ async def complete_refund(
     secret: str,
 ) -> AdminOrderDetail:
     refund = await session.scalar(
+        # NOTE: no joinedload here — PostgreSQL rejects bare FOR UPDATE over
+        # the outer join it produces.
         select(Refund)
         .where(Refund.id == refund_id)
         .with_for_update()
-        .options(joinedload(Refund.payment))
+        .options(selectinload(Refund.payment))
     )
     if refund is None:
         raise ApiError(404, "refund_not_found", "The refund could not be found.")
