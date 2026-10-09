@@ -47,6 +47,7 @@ function apiUrl(path: string): string {
 export async function getPublicStoreSettings(): Promise<PublicStoreSettings> {
   try {
     const response = await fetch(apiUrl("/api/v1/store-settings"), {
+      signal: AbortSignal.timeout(8000),
       next: { revalidate: 300 },
       headers: { accept: "application/json" },
     });

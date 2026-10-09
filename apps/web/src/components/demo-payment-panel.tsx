@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { formatApiError } from "@/lib/api-errors";
+
 export function DemoPaymentPanel({ order, token }: { order: string; token: string }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
@@ -19,7 +21,7 @@ export function DemoPaymentPanel({ order, token }: { order: string; token: strin
       });
       if (!response.ok) {
         const result = (await response.json()) as { message?: string };
-        setError(result.message ?? "Payment could not be confirmed.");
+        setError(formatApiError(result, "Payment could not be confirmed."));
         return;
       }
       router.push(`/orders/${encodeURIComponent(order)}?token=${encodeURIComponent(token)}`);

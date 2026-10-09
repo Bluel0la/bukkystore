@@ -13,21 +13,33 @@ export function AdminLoginForm() {
     setError("");
     setPending(true);
     const form = new FormData(event.currentTarget);
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 20000);
     try {
       const response = await fetch("/api/admin/auth/login", {
+        signal: controller.signal,
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ email: form.get("email"), password: form.get("password") }),
       });
       if (!response.ok) {
-        setError(response.status === 429 ? "Too many attempts. Please wait and try again." : "Email or password is incorrect.");
+        setError(response.status === 429
+          ? "Too many attempts. Please wait and try again."
+          : response.status === 401
+            ? "Email or password is incorrect."
+            : response.status === 504
+              ? "Sign-in timed out. Please try again shortly."
+              : "Sign-in is temporarily unavailable.");
         return;
       }
       router.replace("/admin");
       router.refresh();
     } catch {
-      setError("Sign-in is temporarily unavailable.");
+      setError(controller.signal.aborted
+        ? "Sign-in timed out. Please try again shortly."
+        : "Sign-in is temporarily unavailable.");
     } finally {
+      window.clearTimeout(timeout);
       setPending(false);
     }
   }

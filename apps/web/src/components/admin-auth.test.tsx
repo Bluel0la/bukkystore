@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AdminLoginForm } from "@/components/admin-login-form";
@@ -15,6 +15,7 @@ describe("admin authentication controls", () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.unstubAllGlobals();
     document.cookie = "bukky_admin_csrf=; Max-Age=0; path=/";
   });
@@ -68,6 +69,32 @@ describe("admin authentication controls", () => {
       "/api/admin/auth/logout",
       expect.objectContaining({ headers: { "X-CSRF-Token": "csrf-token" } }),
     );
+  });
+
+  it.each([500, 503, 504])("does not blame credentials for server error %s", async (status) => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("{}", { status })));
+    render(<AdminLoginForm />);
+    fireEvent.submit(screen.getByRole("button", { name: "Sign in" }).closest("form")!);
+    expect(await screen.findByRole("alert")).toHaveTextContent(status === 504 ? "Sign-in timed out" : "Sign-in is temporarily unavailable");
+    expect(screen.getByRole("button", { name: "Sign in" })).toBeEnabled();
+    expect(replace).not.toHaveBeenCalled();
+  });
+
+  it("aborts a stuck request and allows another attempt", async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn().mockImplementationOnce((_url, options: RequestInit) => new Promise((_resolve, reject) => {
+      options.signal!.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")));
+    })).mockResolvedValueOnce(new Response("{}", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    render(<AdminLoginForm />);
+    const form = screen.getByRole("button", { name: "Sign in" }).closest("form")!;
+    fireEvent.submit(form);
+    expect(screen.getByRole("button", { name: "Signing in…" })).toBeDisabled();
+    await act(() => vi.advanceTimersByTimeAsync(20000));
+    expect(screen.getByRole("alert")).toHaveTextContent("Sign-in timed out");
+    expect(screen.getByRole("button", { name: "Sign in" })).toBeEnabled();
+    await act(async () => fireEvent.submit(form));
+    expect(replace).toHaveBeenCalledWith("/admin");
   });
 
   it("does not send logout without a CSRF token", () => {

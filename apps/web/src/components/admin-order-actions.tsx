@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { readCsrfCookie } from "@/lib/admin-client";
 import type { AdminRefund } from "@/lib/admin-types";
+import { formatApiError } from "@/lib/api-errors";
 
 const transitionLabels: Record<string, string> = {
   START_PROCESSING: "Start processing",
@@ -44,7 +45,7 @@ export function AdminOrderActions({ orderId, availableActions, refunds }: {
       });
       if (!response.ok) {
         const result = (await response.json()) as { message?: string };
-        setError(result.message ?? "The order could not be updated.");
+        setError(formatApiError(result, "The order could not be updated."));
         return;
       }
       router.refresh();

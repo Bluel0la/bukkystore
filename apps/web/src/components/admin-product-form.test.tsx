@@ -80,6 +80,45 @@ describe("AdminProductForm", () => {
     await screen.findByText("The product could not be saved. Please try again.");
   });
 
+  it("renders field-level validation details from the API", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          code: "validation_failed",
+          message: "The request could not be validated.",
+          details: [
+            {
+              location: ["body", "compare_at_price_minor"],
+              message: "Value error, compare_at_price_minor must exceed base_price_minor",
+            },
+          ],
+        }),
+        { status: 422, headers: { "content-type": "application/json" } },
+      ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    render(<AdminProductForm categories={categories} />);
+    fillForm();
+    fireEvent.click(screen.getByRole("button", { name: "Save product" }));
+
+    await screen.findByText("Compare-at price must be higher than the selling price.");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("blocks a compare-at price at or below the selling price without calling the API", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    render(<AdminProductForm categories={categories} />);
+    fillForm();
+    fireEvent.change(screen.getByLabelText("Compare-at price (₦), optional"), {
+      target: { value: "20000" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save product" }));
+
+    await screen.findByText("Compare-at price must be higher than the selling price.");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("rejects submission after the CSRF cookie expires", () => {
     document.cookie = "bukky_admin_csrf=; Max-Age=0; path=/";
     render(<AdminProductForm categories={categories} />);

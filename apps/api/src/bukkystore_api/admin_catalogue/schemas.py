@@ -38,6 +38,12 @@ class AdminCategoryUpdate(AdminCatalogueSchema):
         return self
 
 
+class AdminCategoryResponse(CategoryResponse):
+    """Category with storefront visibility for the admin list screen."""
+
+    is_active: bool
+
+
 class BulkArchiveRequest(AdminCatalogueSchema):
     """Archive or restore up to 50 products in one atomic operation."""
 

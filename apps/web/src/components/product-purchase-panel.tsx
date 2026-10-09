@@ -72,7 +72,7 @@ export function ProductPurchasePanel({ product }: { product: ProductDetail }) {
       <div className="mt-7 grid gap-3 sm:grid-cols-2">
         <button
           className="rounded-full border border-[var(--ink)] px-6 py-4 font-semibold disabled:opacity-45"
-          disabled={!selected?.available || quantity < 1 || quantity > 20}
+          disabled={!selected?.available || !Number.isInteger(quantity) || quantity < 1 || quantity > 20}
           onClick={addToBag}
           type="button"
         >
@@ -80,7 +80,7 @@ export function ProductPurchasePanel({ product }: { product: ProductDetail }) {
         </button>
         <button
           className="rounded-full bg-[var(--ink)] px-6 py-4 font-semibold text-white disabled:opacity-45"
-          disabled={!selected?.available || quantity < 1 || quantity > 20}
+          disabled={!selected?.available || !Number.isInteger(quantity) || quantity < 1 || quantity > 20}
           onClick={buyNow}
           type="button"
         >

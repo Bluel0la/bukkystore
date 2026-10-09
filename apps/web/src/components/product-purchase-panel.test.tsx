@@ -37,4 +37,13 @@ describe("ProductPurchasePanel", () => {
     await act(() => vi.runAllTimersAsync());
     expect(screen.getByRole("button", { name: "Buy now" })).toBeDisabled();
   });
+
+  it("rejects fractional quantities instead of silently changing the requested amount", async () => {
+    vi.useFakeTimers();
+    render(<CartProvider><ProductPurchasePanel product={product} /></CartProvider>);
+    await act(() => vi.runAllTimersAsync());
+    fireEvent.change(screen.getByLabelText("Quantity"), { target: { value: "1.5" } });
+    expect(screen.getByRole("button", { name: "Add to bag" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Buy now" })).toBeDisabled();
+  });
 });

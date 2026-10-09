@@ -18,6 +18,7 @@ async function proxy(request: NextRequest, context: RouteContext<"/api/admin/[..
   }
   try {
     const upstream = await fetch(target, {
+      signal: requestedPath === "auth/login" ? AbortSignal.timeout(15000) : undefined,
       method: request.method,
       headers,
       body: request.method === "GET" || request.method === "HEAD" ? undefined : await request.text(),
@@ -28,8 +29,12 @@ async function proxy(request: NextRequest, context: RouteContext<"/api/admin/[..
     const contentType = upstream.headers.get("content-type");
     if (contentType) responseHeaders.set("content-type", contentType);
     for (const cookie of upstream.headers.getSetCookie()) responseHeaders.append("set-cookie", cookie);
-    return new Response(upstream.body, { status: upstream.status, headers: responseHeaders });
-  } catch {
+    const body = requestedPath === "auth/login" ? await upstream.arrayBuffer() : upstream.body;
+    return new Response(body, { status: upstream.status, headers: responseHeaders });
+  } catch (error) {
+    if (error && typeof error === "object" && "name" in error && error.name === "TimeoutError") {
+      return Response.json({ message: "Sign-in timed out. Please try again shortly." }, { status: 504 });
+    }
     return Response.json({ message: "Admin service unavailable" }, { status: 503 });
   }
 }

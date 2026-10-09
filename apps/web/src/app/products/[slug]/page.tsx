@@ -7,7 +7,9 @@ import { ProductPurchasePanel } from "@/components/product-purchase-panel";
 import { ProductGallery } from "@/components/product-gallery";
 import { ProductShare } from "@/components/product-share";
 import { StoreBrand } from "@/components/store-brand";
-import { CatalogueRequestError, formatNaira, getProduct } from "@/lib/catalogue";
+import { StoreFooter } from "@/components/store-footer";
+import { ProductCard } from "@/components/product-card";
+import { CatalogueRequestError, formatNaira, getProduct, getProducts } from "@/lib/catalogue";
 import { getPublicStoreSettings } from "@/lib/store-settings";
 
 type ProductPageProps = { params: Promise<{ slug: string }> };
@@ -48,13 +50,16 @@ export default async function ProductPage({ params }: ProductPageProps) {
     throw error;
   }
   const settings = await settingsPromise;
+  const related = await getProducts(new URLSearchParams({ category: product.category.slug, available: "true", limit: "5" }).toString()).catch(() => null);
+  const recommendations = related?.items.filter((item) => item.id !== product.id).slice(0, 4) ?? [];
 
   return (
-    <main className="mx-auto min-h-screen max-w-5xl px-5 py-6 sm:px-8">
+    <><main className="mx-auto min-h-screen max-w-5xl px-5 py-6 sm:px-8">
       <header className="mb-10 flex items-center justify-between border-b border-[var(--line)] pb-5">
-        <StoreBrand name="Atiten Kids Store" />
+        <StoreBrand name={settings.store_name} />
         <nav aria-label="Product navigation" className="flex items-center gap-5 text-sm"><Link href="/#shop">Back to shop</Link><CartLink /></nav>
       </header>
+      <nav aria-label="Breadcrumb" className="mb-7 flex flex-wrap gap-2 text-xs text-(--muted)"><Link href="/#shop">Collection</Link><span aria-hidden="true">/</span><Link href={`/?category=${encodeURIComponent(product.category.slug)}#shop`}>{product.category.name}</Link><span aria-hidden="true">/</span><span aria-current="page">{product.name}</span></nav>
       <div className="grid gap-10 md:grid-cols-2 md:items-start">
         <ProductGallery images={product.images} />
         <section>
@@ -70,8 +75,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
             priceMinor={product.price_minor}
             whatsappNumber={settings.whatsapp_number}
           />
+          <div className="mt-8 border-t border-[var(--line)] pt-5 text-sm leading-7 text-(--muted)"><p>Lagos delivery · Fees shown at checkout.</p><p>Need help with sizing? Ask us using the WhatsApp link above.</p><Link href="/#help" className="underline underline-offset-4">Shopping & delivery help</Link></div>
         </section>
       </div>
-    </main>
+      {recommendations.length > 0 && <section className="my-16" aria-labelledby="more-pieces"><p className="eyebrow">A little more to love</p><h2 className="mb-7 text-3xl font-semibold tracking-tight" id="more-pieces">Keep exploring</h2><div className="product-rail" tabIndex={0} role="region" aria-label="More products; scroll to explore">{recommendations.map((item) => <ProductCard product={item} key={item.id} />)}</div></section>}
+    </main><StoreFooter settings={settings} /></>
   );
 }

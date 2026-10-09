@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from bukkystore_api.admin_catalogue.schemas import (
     AdminCategoryCreate,
+    AdminCategoryResponse,
     AdminCategoryUpdate,
     AdminProductCreate,
     AdminProductImageResponse,
@@ -43,7 +44,6 @@ from bukkystore_api.admin_catalogue.service import (
     update_product_image,
 )
 from bukkystore_api.auth.dependencies import AdminContext, require_admin, require_csrf
-from bukkystore_api.catalogue.schemas import CategoryResponse
 from bukkystore_api.config import Settings
 from bukkystore_api.dependencies import get_app_settings, get_session
 from bukkystore_api.schemas import ErrorResponse
@@ -62,25 +62,25 @@ MutatingAdmin = Annotated[AdminContext, Depends(require_csrf)]
 AppSettings = Annotated[Settings, Depends(get_app_settings)]
 
 
-@router.get("/categories", response_model=list[CategoryResponse])
-async def categories(session: Session, _admin: Authenticated) -> list[CategoryResponse]:
+@router.get("/categories", response_model=list[AdminCategoryResponse])
+async def categories(session: Session, _admin: Authenticated) -> list[AdminCategoryResponse]:
     return await list_admin_categories(session)
 
 
-@router.post("/categories", response_model=CategoryResponse, status_code=201)
+@router.post("/categories", response_model=AdminCategoryResponse, status_code=201)
 async def category_create(
     payload: AdminCategoryCreate, session: Session, _admin: MutatingAdmin
-) -> CategoryResponse:
+) -> AdminCategoryResponse:
     return await create_category(session, payload)
 
 
-@router.patch("/categories/{category_id}", response_model=CategoryResponse)
+@router.patch("/categories/{category_id}", response_model=AdminCategoryResponse)
 async def category_update(
     category_id: UUID,
     payload: AdminCategoryUpdate,
     session: Session,
     _admin: MutatingAdmin,
-) -> CategoryResponse:
+) -> AdminCategoryResponse:
     return await update_category(session, category_id, payload)
 
 

@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { useCart } from "@/components/cart-provider";
 import { captureAttribution, loadAttribution } from "@/lib/attribution";
+import { formatApiError } from "@/lib/api-errors";
 import { formatNaira } from "@/lib/catalogue";
 import type { CheckoutResponse, DeliveryArea } from "@/lib/commerce-types";
 
@@ -65,7 +66,7 @@ export function CheckoutForm({
       });
       const result = (await response.json()) as CheckoutResponse | { message?: string };
       if (!response.ok || !("payment_url" in result)) {
-        setError("message" in result && result.message ? result.message : "Checkout could not be completed.");
+        setError(formatApiError(result, "Checkout could not be completed."));
         return;
       }
       cart.clear();

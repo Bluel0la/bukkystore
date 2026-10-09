@@ -55,6 +55,10 @@ class ScalarItems:
     def one_or_none(self) -> Product | None:
         return self.items[0] if self.items else None
 
+    def one(self) -> Product:
+        assert len(self.items) == 1
+        return self.items[0]
+
 
 class CategoryItems:
     def __init__(self, items: list[Category]) -> None:
@@ -65,7 +69,7 @@ class CategoryItems:
 
 
 def _product() -> Product:
-    category = Category(id=uuid4(), name="Dresses", slug="dresses")
+    category = Category(id=uuid4(), name="Dresses", slug="dresses", is_active=True)
     product = Product(
         id=uuid4(),
         category=category,
@@ -132,9 +136,12 @@ async def test_category_create_list_update_and_conflicts() -> None:
     )
 
     assert created.parent_id == parent.id
+    assert created.is_active is True
     assert listed[0].slug == "clothing"
+    assert listed[0].is_active is True
     assert updated.name == "All Clothing"
     assert parent.is_active is False
+    assert updated.is_active is False
 
     session.get = AsyncMock(return_value=None)
     with pytest.raises(ApiError):
@@ -181,6 +188,11 @@ async def test_create_product_builds_initial_stock_ledger() -> None:
             AdminVariantCreate(sku="NEW-M", display_name="Medium", size="M", initial_stock=3)
         ],
     )
+
+    async def refetch(_stmt: object) -> ScalarItems:
+        return ScalarItems([session.add.call_args.args[0]])
+
+    session.scalars = AsyncMock(side_effect=refetch)
 
     created = await create_product(session, payload, uuid4())
 
@@ -230,6 +242,11 @@ async def test_create_product_generates_missing_skus() -> None:
         ],
     )
 
+    async def refetch(_stmt: object) -> ScalarItems:
+        return ScalarItems([session.add.call_args.args[0]])
+
+    session.scalars = AsyncMock(side_effect=refetch)
+
     created = await create_product(session, payload, uuid4())
 
     assert [variant.sku for variant in created.variants] == ["BLD-BRO-M", "BLD-BRO-L"]
@@ -258,6 +275,11 @@ async def test_create_product_escalates_past_database_skus() -> None:
         base_price_minor=20_000_00,
         variants=[AdminVariantCreate(display_name="Brown / M", colour="Brown", size="M")],
     )
+
+    async def refetch(_stmt: object) -> ScalarItems:
+        return ScalarItems([session.add.call_args.args[0]])
+
+    session.scalars = AsyncMock(side_effect=refetch)
 
     created = await create_product(session, payload, uuid4())
 

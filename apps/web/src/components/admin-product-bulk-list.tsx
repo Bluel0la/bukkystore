@@ -6,6 +6,7 @@ import { useState } from "react";
 
 import { readCsrfCookie } from "@/lib/admin-client";
 import type { AdminProduct } from "@/lib/admin-types";
+import { formatApiError } from "@/lib/api-errors";
 import { formatNaira } from "@/lib/catalogue";
 
 function stockSummary(product: AdminProduct): { label: string; tone: string } {
@@ -67,8 +68,9 @@ export function AdminProductBulkList({
         let detail = `HTTP ${response.status}`;
         try {
           const body = (await response.json()) as { message?: string; code?: string };
-          detail = [body.code, body.message ?? "Bulk update failed."].filter(Boolean).join(" · ");
-          detail = `Bulk update failed (HTTP ${response.status} · ${detail}).`;
+          const message = formatApiError(body, "Bulk update failed.");
+          const code = typeof body.code === "string" && body.code ? ` · ${body.code}` : "";
+          detail = `${message} (HTTP ${response.status}${code}).`;
         } catch {
           detail = `Bulk update failed (HTTP ${response.status}).`;
         }

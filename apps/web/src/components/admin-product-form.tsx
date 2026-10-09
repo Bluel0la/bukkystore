@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
 import type { Category } from "@/lib/catalogue";
+import { formatApiError } from "@/lib/api-errors";
 import { readCsrfCookie } from "@/lib/admin-client";
 
 type DraftVariant = { colour: string; size: string; displayName: string; stock: string };
@@ -25,16 +26,29 @@ export function AdminProductForm({ categories }: { categories: Category[] }) {
     if (!csrf) return setError("Your session expired. Please sign in again.");
     const form = new FormData(event.currentTarget);
     setError("");
-    setPending(true);
     const price = Math.round(Number(form.get("price")) * 100);
     const compareValue = String(form.get("comparePrice") ?? "").trim();
+    const compareAt = compareValue ? Math.round(Number(compareValue) * 100) : null;
+    if (!Number.isFinite(price) || price < 0) {
+      setError("Selling price must be zero or more.");
+      return;
+    }
+    if (compareValue && (!Number.isFinite(compareAt) || (compareAt ?? 0) <= 0)) {
+      setError("Compare-at price must be more than zero, or left empty.");
+      return;
+    }
+    if (compareAt !== null && compareAt <= price) {
+      setError("Compare-at price must be higher than the selling price.");
+      return;
+    }
+    setPending(true);
     const payload = {
       category_id: form.get("categoryId"),
       name: form.get("name"),
       slug: form.get("slug"),
       description: form.get("description"),
       base_price_minor: price,
-      compare_at_price_minor: compareValue ? Math.round(Number(compareValue) * 100) : null,
+      compare_at_price_minor: compareAt,
       status: form.get("status"),
       featured: form.get("featured") === "on",
       variants: variants.map((variant) => ({
@@ -54,7 +68,7 @@ export function AdminProductForm({ categories }: { categories: Category[] }) {
       });
       const body = await response.json();
       if (!response.ok) {
-        setError(body.message ?? "The product could not be saved.");
+        setError(formatApiError(body, "The product could not be saved."));
         return;
       }
       router.push(`/admin/products/${body.id}`);

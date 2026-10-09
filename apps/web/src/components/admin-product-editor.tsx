@@ -5,6 +5,7 @@ import { type FormEvent, useState } from "react";
 
 import { readCsrfCookie } from "@/lib/admin-client";
 import { AdminProductPhotos } from "@/components/admin-product-photos";
+import { formatApiError } from "@/lib/api-errors";
 import type { AdminProduct, AdminVariant } from "@/lib/admin-types";
 import type { Category } from "@/lib/catalogue";
 
@@ -28,7 +29,7 @@ function StockAdjustment({ variant }: { variant: AdminVariant }) {
     });
     if (!response.ok) {
       const body = await response.json();
-      setError(body.message ?? "Stock could not be changed.");
+      setError(formatApiError(body, "Stock could not be changed."));
     } else {
       formElement.reset();
       router.refresh();
@@ -76,8 +77,9 @@ export function AdminProductEditor({ product, categories }: { product: AdminProd
   async function readError(response: Response, fallback: string): Promise<string> {
     try {
       const body = (await response.json()) as { message?: string; code?: string };
-      const detail = [body.code, body.message ?? fallback].filter(Boolean).join(" · ");
-      return `${fallback} (HTTP ${response.status} · ${detail}).`;
+      const message = formatApiError(body, fallback);
+      const code = typeof body.code === "string" && body.code ? ` · ${body.code}` : "";
+      return `${message} (HTTP ${response.status}${code}).`;
     } catch {
       return `${fallback} (HTTP ${response.status}).`;
     }

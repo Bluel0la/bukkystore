@@ -19,6 +19,7 @@ from bukkystore_api.admin_catalogue.cloudinary import (
 )
 from bukkystore_api.admin_catalogue.schemas import (
     AdminCategoryCreate,
+    AdminCategoryResponse,
     AdminCategoryUpdate,
     AdminProductCreate,
     AdminProductImageResponse,
@@ -44,17 +45,17 @@ from bukkystore_api.catalogue.models import (
     ProductVariant,
     VariantStatus,
 )
-from bukkystore_api.catalogue.schemas import CategoryResponse
 from bukkystore_api.config import Settings
 from bukkystore_api.errors import ApiError
 
 
-def _category_response(category: Category) -> CategoryResponse:
-    return CategoryResponse(
+def _category_response(category: Category) -> AdminCategoryResponse:
+    return AdminCategoryResponse(
         id=category.id,
         name=category.name,
         slug=category.slug,
         parent_id=category.parent_id,
+        is_active=category.is_active,
     )
 
 
@@ -180,19 +181,21 @@ async def _unique_generated_sku(
     raise ApiError(409, "product_conflict", "A unique SKU could not be generated.")
 
 
-async def list_admin_categories(session: AsyncSession) -> list[CategoryResponse]:
+async def list_admin_categories(session: AsyncSession) -> list[AdminCategoryResponse]:
     categories = (
         await session.scalars(select(Category).order_by(Category.display_position, Category.name))
     ).all()
     return [_category_response(category) for category in categories]
 
 
-async def create_category(session: AsyncSession, payload: AdminCategoryCreate) -> CategoryResponse:
+async def create_category(
+    session: AsyncSession, payload: AdminCategoryCreate
+) -> AdminCategoryResponse:
     if payload.parent_id is not None:
         parent = await session.get(Category, payload.parent_id)
         if parent is None:
             raise ApiError(404, "category_parent_not_found", "The parent category was not found.")
-    category = Category(**payload.model_dump())
+    category = Category(**payload.model_dump(), is_active=True)
     session.add(category)
     try:
         await session.commit()
@@ -204,7 +207,7 @@ async def create_category(session: AsyncSession, payload: AdminCategoryCreate) -
 
 async def update_category(
     session: AsyncSession, category_id: UUID, payload: AdminCategoryUpdate
-) -> CategoryResponse:
+) -> AdminCategoryResponse:
     category = await session.get(Category, category_id)
     if category is None:
         raise ApiError(404, "category_not_found", "The category was not found.")
@@ -322,9 +325,41 @@ async def create_product(
         await session.commit()
     except IntegrityError as exc:
         await session.rollback()
-        raise ApiError(
-            409, "product_conflict", "The product slug, SKU, or option combination is in use."
-        ) from exc
+        # asyncpg stores constraint info directly on the original exception.
+        orig = exc.orig
+        constraint_name = getattr(orig, "constraint_name", None)
+        detail = getattr(orig, "detail", None)
+        if constraint_name is None:
+            # Fallback: parse from the string representation.
+            raw = str(orig)
+            constraint_name = raw
+            detail = raw
+        if "uq_products_slug" in (constraint_name or ""):
+            message = f"The product slug '{payload.slug}' is already in use."
+        elif "uq_product_variants_sku" in (constraint_name or ""):
+            message = f"A variant SKU is already in use. Detail: {detail}"
+        elif "uq_product_variants_option_combination" in (constraint_name or ""):
+            message = f"A variant colour/size combination is duplicated. Detail: {detail}"
+        else:
+            message = f"Conflict: constraint={constraint_name}, detail={detail}"
+        raise ApiError(409, "product_conflict", message) from exc
+    # Re-fetch with eager loading so _product_response does not trigger
+    # a synchronous lazy-load on the async session (MissingGreenlet).
+    product = (
+        (
+            await session.scalars(
+                select(Product)
+                .where(Product.id == product.id)
+                .options(
+                    joinedload(Product.category),
+                    selectinload(Product.variants),
+                    selectinload(Product.images),
+                )
+            )
+        )
+        .unique()
+        .one()
+    )
     return _product_response(product)
 
 

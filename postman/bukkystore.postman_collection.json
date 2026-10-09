@@ -613,6 +613,34 @@
           ]
         },
         {
+          "name": "Create category",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }],
+            "body": { "mode": "raw", "raw": "{\"name\": \"Postman Category\", \"slug\": \"postman-category\"}" },
+            "url": { "raw": "{{base_url}}/api/v1/admin/categories", "host": ["{{base_url}}"], "path": ["api", "v1", "admin", "categories"] },
+            "description": "Creates a category. Disabled by default; reruns return 409 on the duplicate slug."
+          },
+          "event": [{ "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["if (String(pm.environment.get('run_catalogue_write')).toLowerCase() !== 'true') { pm.execution.skipRequest(); }"] } }, { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('returns HTTP 201', function () { pm.response.to.have.status(201); });",
+              "pm.test('returns the category', function () { const body = pm.response.json(); pm.expect(body.slug).to.eql('postman-category'); pm.expect(body.is_active).to.be.true; pm.environment.set('admin_category_id', body.id); });"
+            ] } }]
+        },
+        {
+          "name": "Update category",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-CSRF-Token", "value": "{{csrf_token}}" }],
+            "body": { "mode": "raw", "raw": "{\"is_active\": false}" },
+            "url": { "raw": "{{base_url}}/api/v1/admin/categories/{{admin_category_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "admin", "categories", "{{admin_category_id}}"] },
+            "description": "Deactivates the Postman category so the storefront hides it. Disabled by default."
+          },
+          "event": [{ "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["if (String(pm.environment.get('run_catalogue_write')).toLowerCase() !== 'true' || !pm.environment.get('admin_category_id')) { pm.execution.skipRequest(); }"] } }, { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('returns HTTP 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('deactivates the category', function () { pm.expect(pm.response.json().is_active).to.be.false; });"
+            ] } }]
+        },
+        {
           "name": "List admin products",
           "request": {
             "method": "GET",

@@ -51,6 +51,7 @@ function apiUrl(path: string): string {
 
 async function request<T>(path: string, revalidate: number): Promise<T> {
   const response = await fetch(apiUrl(path), {
+    signal: AbortSignal.timeout(8000),
     next: { revalidate },
     headers: { accept: "application/json" },
   });

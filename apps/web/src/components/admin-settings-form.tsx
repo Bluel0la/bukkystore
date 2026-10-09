@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { readCsrfCookie } from "@/lib/admin-client";
 import type { AdminStoreSettings, BusinessHours, DaySchedule } from "@/lib/admin-types";
+import { formatApiError } from "@/lib/api-errors";
 
 const days: Array<{ key: keyof BusinessHours; label: string }> = [
   { key: "monday", label: "Monday" },
@@ -77,7 +78,7 @@ export function AdminSettingsForm({ initial }: { initial: AdminStoreSettings }) 
       });
       if (!response.ok) {
         const result = (await response.json()) as { message?: string };
-        setError(result.message ?? "The settings could not be saved.");
+        setError(formatApiError(result, "The settings could not be saved."));
         return;
       }
       setSaved(true);

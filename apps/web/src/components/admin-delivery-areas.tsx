@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { readCsrfCookie } from "@/lib/admin-client";
 import type { AdminDeliveryArea } from "@/lib/admin-types";
+import { formatApiError } from "@/lib/api-errors";
 import { formatNaira } from "@/lib/catalogue";
 
 export function AdminDeliveryAreas({ initial }: { initial: AdminDeliveryArea[] }) {
@@ -35,7 +36,7 @@ export function AdminDeliveryAreas({ initial }: { initial: AdminDeliveryArea[] }
       });
       if (!response.ok) {
         const result = (await response.json()) as { message?: string };
-        setError(result.message ?? "The delivery area could not be saved.");
+        setError(formatApiError(result, "The delivery area could not be saved."));
         return;
       }
       setName("");

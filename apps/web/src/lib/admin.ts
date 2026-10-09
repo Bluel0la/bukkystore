@@ -1,7 +1,6 @@
 import { cookies } from "next/headers";
 
-import type { AdminAnalyticsOverview, AdminDeliveryArea, AdminOrder, AdminOrderPage, AdminProduct, AdminProductPage, AdminStoreSettings, AdminUser, ProductEngagement } from "@/lib/admin-types";
-import type { Category } from "@/lib/catalogue";
+import type { AdminAnalyticsOverview, AdminCategory, AdminDeliveryArea, AdminOrder, AdminOrderPage, AdminProduct, AdminProductPage, AdminStoreSettings, AdminUser, ProductEngagement } from "@/lib/admin-types";
 
 function internalUrl(path: string): string {
   const baseUrl = process.env.API_INTERNAL_URL ?? "http://127.0.0.1:8000";
@@ -12,6 +11,7 @@ export async function adminRequest<T>(path: string): Promise<T | null> {
   const cookieStore = await cookies();
   try {
     const response = await fetch(internalUrl(path), {
+      signal: AbortSignal.timeout(15000),
       cache: "no-store",
       headers: {
         accept: "application/json",
@@ -48,8 +48,8 @@ export function getAdminProduct(productId: string): Promise<AdminProduct | null>
   return adminRequest<AdminProduct>(`/products/${encodeURIComponent(productId)}`);
 }
 
-export function getAdminCategories(): Promise<Category[] | null> {
-  return adminRequest<Category[]>("/categories");
+export function getAdminCategories(): Promise<AdminCategory[] | null> {
+  return adminRequest<AdminCategory[]>("/categories");
 }
 
 export function getAdminOrders(): Promise<AdminOrderPage | null> {

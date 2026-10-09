@@ -6,6 +6,7 @@ import { type ChangeEvent, useState } from "react";
 
 import { readCsrfCookie } from "@/lib/admin-client";
 import type { AdminProductImage } from "@/lib/admin-types";
+import { formatApiError } from "@/lib/api-errors";
 
 type UploadSignature = {
   upload_url: string; api_key: string; timestamp: number; public_id: string; signature: string;
@@ -18,7 +19,7 @@ type CloudinaryUpload = {
 
 async function errorMessage(response: Response, fallback: string): Promise<string> {
   const body = await response.json().catch(() => null) as { message?: string } | null;
-  return body?.message ?? fallback;
+  return formatApiError(body, fallback);
 }
 
 export function uploadPhoto(

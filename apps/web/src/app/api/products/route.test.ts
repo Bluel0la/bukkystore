@@ -26,4 +26,12 @@ describe("products BFF", () => {
     const response = await GET(new Request("http://localhost/api/products", { method: "GET" }));
     expect(response.status).toBe(503);
   });
+
+  it("forwards search, size, budget and pagination to the catalogue", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({ items: [], next_cursor: null }));
+    vi.stubGlobal("fetch", fetchMock);
+    await GET(new Request("http://localhost/api/products?search=linen&size=4Y&max_price_minor=2500000&cursor=abc&available=true"));
+    const query = new URL(fetchMock.mock.calls[0][0]).searchParams;
+    expect(Object.fromEntries(query)).toEqual({ search: "linen", size: "4Y", max_price_minor: "2500000", cursor: "abc", available: "true", limit: "8" });
+  });
 });

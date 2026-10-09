@@ -1,5 +1,7 @@
 import type { Category } from "@/lib/catalogue";
 
+export type AdminCategory = Category & { is_active: boolean };
+
 export type AdminUser = { id: string; email: string; display_name: string; role: "OWNER" | "ADMIN" };
 export type AdminVariant = {
   id: string; sku: string; colour: string | null; size: string | null; display_name: string;

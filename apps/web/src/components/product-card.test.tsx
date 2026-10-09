@@ -34,4 +34,13 @@ describe("ProductCard", () => {
 
     expect(screen.getByText("Sold out")).toBeInTheDocument();
   });
+
+  it("shows a genuine markdown without labelling equal prices as a sale", () => {
+    const { rerender, container } = render(<ProductCard product={{ ...product, compare_at_price_minor: 5000000 }} />);
+    expect(screen.getByText("Sale")).toBeInTheDocument();
+    expect(container.querySelector("del")).toHaveTextContent("50,000");
+    rerender(<ProductCard product={{ ...product, compare_at_price_minor: product.price_minor }} />);
+    expect(screen.queryByText("Sale")).not.toBeInTheDocument();
+    expect(container.querySelector("del")).toBeNull();
+  });
 });

@@ -1,4 +1,4 @@
-const ALLOWED_PARAMS = new Set(["category", "available", "featured", "limit"]);
+const ALLOWED_PARAMS = new Set(["category", "search", "size", "available", "featured", "min_price_minor", "max_price_minor", "cursor", "limit"]);
 
 export async function GET(request: Request) {
   const incoming = new URL(request.url).searchParams;
@@ -10,6 +10,7 @@ export async function GET(request: Request) {
   const baseUrl = (process.env.API_INTERNAL_URL ?? "http://127.0.0.1:8000").replace(/\/$/, "");
   try {
     const response = await fetch(`${baseUrl}/api/v1/products?${outgoing}`, {
+      signal: AbortSignal.timeout(8000),
       headers: { accept: "application/json" },
       cache: "no-store",
     });
