@@ -1,0 +1,75 @@
+import type { Category } from "@/lib/catalogue";
+
+export type AdminCategory = Category & { is_active: boolean };
+
+export type AdminUser = { id: string; email: string; display_name: string; role: "OWNER" | "ADMIN" };
+export type AdminVariant = {
+  id: string; sku: string; colour: string | null; size: string | null; display_name: string;
+  price_override_minor: number | null; stock_on_hand: number; reserved_quantity: number;
+  available_quantity: number; low_stock_threshold: number; status: "ACTIVE" | "ARCHIVED";
+};
+export type AdminProductImage = {
+  id: string; public_id: string; url: string; alt_text: string;
+  width: number; height: number; position: number;
+};
+export type AdminProduct = {
+  id: string; category: Category; name: string; slug: string; description: string;
+  base_price_minor: number; compare_at_price_minor: number | null; currency: string;
+  status: "DRAFT" | "ACTIVE" | "ARCHIVED"; featured: boolean; variants: AdminVariant[];
+  images: AdminProductImage[];
+  created_at: string; updated_at: string;
+};
+export type AdminProductPage = { items: AdminProduct[]; next_cursor: string | null };
+
+export type AdminOrderSummary = {
+  id: string; order_number: string; customer_full_name: string; customer_phone: string;
+  total_minor: number; currency: "NGN"; status: string; payment_status: string; created_at: string;
+};
+export type AdminRefund = {
+  id: string; payment_id: string; amount_minor: number; currency: "NGN"; reason: string;
+  status: "PENDING" | "SUCCESS" | "FAILED"; manual_reference: string | null;
+  created_at: string; completed_at: string | null;
+};
+export type AdminOrder = AdminOrderSummary & {
+  customer_email: string | null; delivery_area_name: string; delivery_address: string;
+  delivery_directions: string | null; subtotal_minor: number; delivery_fee_minor: number;
+  items: Array<{ id: string; product_name: string; variant_name: string; sku: string;
+    unit_price_minor: number; quantity: number; line_subtotal_minor: number }>;
+  refunds: AdminRefund[]; available_actions: string[];
+};
+export type AdminOrderPage = { items: AdminOrderSummary[] };
+
+export type DaySchedule = { closed: boolean; open: string | null; close: string | null };
+export type BusinessHours = {
+  monday: DaySchedule; tuesday: DaySchedule; wednesday: DaySchedule; thursday: DaySchedule;
+  friday: DaySchedule; saturday: DaySchedule; sunday: DaySchedule;
+};
+export type AdminStoreSettings = {
+  id: string; store_name: string; logo_ref: string | null;
+  whatsapp_number: string; phone_number: string;
+  instagram_url: string | null; tiktok_url: string | null;
+  address: string; city: string; currency: string;
+  minimum_order_minor: number | null; business_hours: BusinessHours;
+  created_at: string; updated_at: string;
+};
+export type AdminDeliveryArea = {
+  id: string; name: string; fee_minor: number; currency: string;
+  display_position: number; is_active: boolean;
+};
+export type ProductEngagement = {
+  product_id: string; product_name: string; range_days: number; period_start: string;
+  views: number; shares: number; whatsapp_clicks: number;
+};
+export type EngagementMetric = {
+  product_id: string; product_name: string; views: number; whatsapp_clicks: number;
+};
+export type AdminAnalyticsOverview = {
+  generated_at: string; period_start: string; range_days: number; currency: "NGN";
+  total_orders: number; sales_orders: number; sales_minor: number; average_order_minor: number;
+  awaiting_payment_orders: number; open_fulfilment_orders: number; pending_refunds: number;
+  low_stock_variants: number;
+  top_products: Array<{ product_id: string; product_name: string; units_sold: number; sales_minor: number }>;
+  sources: Array<{ source: string; orders: number; sales_minor: number }>;
+  engagement: EngagementMetric[];  low_stock: Array<{ variant_id: string; product_id: string; product_name: string;
+    variant_name: string; sku: string; available_quantity: number; low_stock_threshold: number }>;
+};

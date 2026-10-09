@@ -7,6 +7,11 @@ from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
+from bukkystore_api.admin_settings import models as admin_settings_models  # noqa: F401
+from bukkystore_api.analytics import models as analytics_models  # noqa: F401
+from bukkystore_api.auth import models as auth_models  # noqa: F401
+from bukkystore_api.catalogue import models as catalogue_models  # noqa: F401
+from bukkystore_api.commerce import models as commerce_models  # noqa: F401
 from bukkystore_api.config import get_settings
 from bukkystore_api.database import Base
 
@@ -15,7 +20,9 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-config.set_main_option("sqlalchemy.url", str(get_settings().database_url))
+# ConfigParser reserves percent signs for interpolation. Escaping them keeps
+# URL-encoded credentials valid and prevents configuration failures.
+config.set_main_option("sqlalchemy.url", str(get_settings().database_url).replace("%", "%%"))
 target_metadata = Base.metadata
 
 

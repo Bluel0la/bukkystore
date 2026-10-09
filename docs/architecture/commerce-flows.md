@@ -51,6 +51,10 @@ For a success notification, the handler:
 
 Repeated success notifications return success without repeating stock changes.
 Out-of-order failure notifications cannot downgrade an already successful payment.
+Every normalized result also creates an append-only `payment_events` receipt with
+a sanitized payload hash and processing outcome. The fake provider's development
+confirmation endpoint uses this exact service while deriving amount, currency,
+references, and success state from trusted server records.
 
 ## Reservation expiry and late payment
 
@@ -93,8 +97,9 @@ merchant's assigned documentation before launch.
 - The allocated item quantity is restored exactly once with
   `CANCELLATION_RESTOCK` movements.
 - A refund record is created separately.
-- The initial release may record a manual refund; provider-API refunds can be
-  introduced after the selected provider is confirmed.
+- The initial release records a pending full manual refund. An admin marks it sent
+  with an optional bank/provider reference; provider-API refunds can be introduced
+  after the selected provider is confirmed.
 
 ### Processing or later
 
@@ -106,6 +111,11 @@ merchant's assigned documentation before launch.
 
 Refund failure does not reopen or duplicate stock mutations. It remains visible as
 a finance exception for an admin to resolve.
+
+A provider success received after an unpaid cancellation never reclaims stock or
+resurrects the order. It moves the order to `REFUND_REQUIRED`. Provider callbacks
+received after a payment is partially or fully refunded cannot reverse that refund
+state.
 
 ## Order transitions
 

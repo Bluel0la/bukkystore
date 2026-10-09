@@ -83,6 +83,10 @@ same-site cookies. Raw tokens are never persisted.
   dimensions, display position, and timestamps.
 - The public identifier is retained so an image can be transformed or deleted
   safely through Cloudinary.
+- Products accept at most ten images. Position zero is the storefront cover,
+  every position is unique per product, and removals compact the remaining order.
+- Delivery URLs are constructed only after the API verifies Cloudinary's signed
+  upload response; arbitrary client-supplied image URLs are never persisted.
 
 ### `product_variants`
 
@@ -174,6 +178,12 @@ Stores product and variant references plus immutable snapshots of product name,
 variant description, SKU, unit price, quantity, and line subtotal. Quantities must
 be positive and totals must equal the server-calculated values.
 
+### `order_status_events`
+
+Append-only records capture the previous and new status, operation type, reason,
+admin actor, timestamp, and unique idempotency hash for each fulfilment or
+cancellation action.
+
 ### `inventory_reservations`
 
 One checkout reservation per order, with status `ACTIVE`, `CONVERTED`, `RELEASED`,
@@ -215,9 +225,11 @@ and timestamps. A uniqueness constraint prevents duplicate notification handling
 
 ### `refunds`
 
-Stores payment, amount, reason, mode (`MANUAL` or `PROVIDER_API`), provider
-reference, status, actor, and timestamps. Refund status is `PENDING`, `SUCCESS`,
-or `FAILED`. A cancelled order and a successful refund are separate facts.
+Stores order, payment, amount, currency, reason, mode (`MANUAL`), manual reference,
+status, creator/completer actors, completion idempotency hash, and timestamps.
+Refund status is `PENDING`, `SUCCESS`, or `FAILED`. The initial release permits one
+full refund per order. A cancelled order and a successful refund are separate
+facts.
 
 ## Settings and analytics
 
@@ -227,11 +239,21 @@ A singleton record holds the provisional name `Bukky Store`, logo reference,
 WhatsApp/phone details, social links, currency, city, minimum order, and business
 hours. Business configuration is not hardcoded.
 
+### Operational analytics
+
+The first analytics slice is a read-only projection over authoritative orders,
+order-item snapshots, refunds, and active variants. It stores no duplicate totals.
+Checkout `attribution_source` supplies the initial source breakdown, with missing
+values grouped as `Direct`. A dedicated order-created timestamp index supports
+bounded reporting windows.
+
 ### `analytics_events`
 
 Stores a constrained event type, anonymous session identifier, optional product,
 source, campaign, bounded metadata, and UTC timestamp. Event ingestion is
 best-effort, rate-limited, and isolated from purchasing transactions.
+This broader browsing/conversion event stream remains deferred; it is not required
+for the order-based operations dashboard.
 
 ## Database invariants
 

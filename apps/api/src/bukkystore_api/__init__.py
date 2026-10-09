@@ -1,3 +1,3 @@
-"""Bukky Store API package."""
+"""Atiten Kids Store API package."""
 
 __version__ = "0.1.0"

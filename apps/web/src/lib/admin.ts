@@ -1,0 +1,79 @@
+import { cookies } from "next/headers";
+
+import type { AdminAnalyticsOverview, AdminCategory, AdminDeliveryArea, AdminOrder, AdminOrderPage, AdminProduct, AdminProductPage, AdminStoreSettings, AdminUser, ProductEngagement } from "@/lib/admin-types";
+
+function internalUrl(path: string): string {
+  const baseUrl = process.env.API_INTERNAL_URL ?? "http://127.0.0.1:8000";
+  return `${baseUrl.replace(/\/$/, "")}/api/v1/admin${path}`;
+}
+
+export async function adminRequest<T>(path: string): Promise<T | null> {
+  const cookieStore = await cookies();
+  try {
+    const response = await fetch(internalUrl(path), {
+      signal: AbortSignal.timeout(15000),
+      cache: "no-store",
+      headers: {
+        accept: "application/json",
+        cookie: cookieStore.toString(),
+      },
+    });
+    if (response.status === 401 || response.status === 403) return null;
+    if (!response.ok) {
+      console.warn(`[admin] ${path} responded ${response.status}`);
+      return null;
+    }
+    return (await response.json()) as T;
+  } catch (error) {
+    console.warn(`[admin] ${path} fetch failed:`, error instanceof Error ? error.message : error);
+    return null;
+  }
+}
+
+export function getAdminUser(): Promise<AdminUser | null> {
+  return adminRequest<AdminUser>("/auth/me");
+}
+
+export function getAdminProducts(filters: {
+  search?: string;
+  status?: "DRAFT" | "ACTIVE" | "ARCHIVED";
+} = {}): Promise<AdminProductPage | null> {
+  const query = new URLSearchParams({ limit: "100" });
+  if (filters.search) query.set("search", filters.search);
+  if (filters.status) query.set("status", filters.status);
+  return adminRequest<AdminProductPage>(`/products?${query}`);
+}
+
+export function getAdminProduct(productId: string): Promise<AdminProduct | null> {
+  return adminRequest<AdminProduct>(`/products/${encodeURIComponent(productId)}`);
+}
+
+export function getAdminCategories(): Promise<AdminCategory[] | null> {
+  return adminRequest<AdminCategory[]>("/categories");
+}
+
+export function getAdminOrders(): Promise<AdminOrderPage | null> {
+  return adminRequest<AdminOrderPage>("/orders?limit=100");
+}
+
+export function getAdminOrder(orderId: string): Promise<AdminOrder | null> {
+  return adminRequest<AdminOrder>(`/orders/${encodeURIComponent(orderId)}`);
+}
+
+export function getAdminAnalytics(days = 30): Promise<AdminAnalyticsOverview | null> {
+  return adminRequest<AdminAnalyticsOverview>(`/analytics/overview?days=${days}`);
+}
+
+export function getAdminStoreSettings(): Promise<AdminStoreSettings | null> {
+  return adminRequest<AdminStoreSettings>("/store-settings");
+}
+
+export function getAdminDeliveryAreas(): Promise<AdminDeliveryArea[] | null> {
+  return adminRequest<AdminDeliveryArea[]>("/delivery-areas");
+}
+
+export function getProductEngagement(productId: string, days = 30): Promise<ProductEngagement | null> {
+  return adminRequest<ProductEngagement>(
+    `/analytics/products/${encodeURIComponent(productId)}?days=${days}`,
+  );
+}
