@@ -256,6 +256,7 @@ async def create_checkout(
                 customer_email=order.customer_email,
                 customer_phone=order.customer_phone,
                 order_number=order.order_number,
+                order_access_token=access_token,
             )
         )
         if not isinstance(initialized, PaymentInitializationResponse):

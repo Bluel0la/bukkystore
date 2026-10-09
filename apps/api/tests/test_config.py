@@ -13,6 +13,11 @@ def production_settings(**overrides: object) -> Settings:
         "cors_origins": ["https://bukkystore.example"],
         "session_secret": "production-secret-value-with-at-least-32-characters",
         "payment_provider": "opay",
+        "opay_environment": "production",
+        "opay_merchant_id": "merchant-123",
+        "opay_public_key": "OPAYPUB-production-key",
+        "opay_secret_key": "OPAYPRV-production-key",
+        "opay_callback_url": "https://api.example.com/api/v1/payments/opay/callback",
         "cloudinary_cloud_name": "bukky-test",
         "cloudinary_api_key": "cloudinary-key",
         "cloudinary_api_secret": "cloudinary-secret",
@@ -24,6 +29,16 @@ def production_settings(**overrides: object) -> Settings:
 def test_production_rejects_fake_payment_provider() -> None:
     with pytest.raises(ValidationError, match="fake payment provider"):
         production_settings(payment_provider="fake")
+
+
+def test_opay_requires_complete_credentials() -> None:
+    with pytest.raises(ValidationError, match="OPay configuration"):
+        production_settings(opay_secret_key=None)
+
+
+def test_production_rejects_opay_sandbox() -> None:
+    with pytest.raises(ValidationError, match="OPay production"):
+        production_settings(opay_environment="sandbox")
 
 
 def test_production_requires_explicit_cors_origin() -> None:

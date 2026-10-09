@@ -2,7 +2,11 @@ from __future__ import annotations
 
 from uuid import uuid4
 
+import pytest
+from fastapi import FastAPI
 from httpx import AsyncClient
+
+from bukkystore_api.commerce.payments import OpayPaymentProvider
 
 
 def _payload() -> dict[str, object]:
@@ -96,3 +100,52 @@ async def test_fake_confirmation_requires_strict_private_order_fields(client: As
 
     assert response.status_code == 422
     assert response.json()["code"] == "validation_failed"
+
+
+def _opay_callback() -> dict[str, object]:
+    return {
+        "payload": {
+            "amount": "20000",
+            "currency": "NGN",
+            "reference": "BKS-REFERENCE",
+            "refunded": False,
+            "status": "PENDING",
+            "timestamp": "2026-10-09T12:00:00Z",
+            "token": "opay-token",
+            "transactionId": "opay-transaction",
+        },
+        "sha512": "0" * 128,
+        "type": "transaction-status",
+    }
+
+
+async def test_opay_callback_is_hidden_when_provider_is_inactive(client: AsyncClient) -> None:
+    response = await client.post("/api/v1/payments/opay/callback", json=_opay_callback())
+
+    assert response.status_code == 404
+
+
+async def test_opay_pending_callback_is_verified_and_acknowledged(
+    client: AsyncClient,
+    app: FastAPI,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    provider = OpayPaymentProvider(
+        merchant_id="merchant-123",
+        public_key="OPAYPUB-test-key",
+        secret_key="OPAYPRV-test-key",
+        callback_url="https://api.example.com/api/v1/payments/opay/callback",
+        site_url="https://shop.example.com",
+    )
+
+    async def pending(_reference: str) -> None:
+        return None
+
+    monkeypatch.setattr(provider, "callback_is_authentic", lambda _payload: True)
+    monkeypatch.setattr(provider, "query_confirmation", pending)
+    app.state.payment_provider = provider
+
+    response = await client.post("/api/v1/payments/opay/callback", json=_opay_callback())
+
+    assert response.status_code == 200
+    assert response.content == b""

@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { AdminLogout } from "@/components/admin-logout";
 import { getAdminAnalytics, getAdminOrders, getAdminStoreSettings, getAdminUser } from "@/lib/admin";
 import { formatNaira } from "@/lib/catalogue";
 
@@ -33,28 +32,23 @@ export default async function AdminPage() {
     <main className="mx-auto min-h-screen max-w-6xl px-5 py-6 sm:px-8">
       <header className="mb-8 flex flex-wrap items-end justify-between gap-5">
         <div>
-          <p className="text-sm text-(--muted)">Welcome back, {user.display_name}</p>
-          <h1 className="mt-1 text-3xl font-semibold tracking-[-0.04em]">Store operations</h1>
+          <p className="text-xs font-bold uppercase tracking-[0.15em] text-(--wine)">Operations briefing · last 30 days</p>
+          <h1 className="mt-2 text-4xl font-semibold tracking-[-0.045em]">Good to see you, {user.display_name}.</h1>
           <p className="mt-2 max-w-xl text-sm leading-6 text-(--muted)">
-            A current view of sales, fulfilment, refunds, and stock across {storeName}.
+            Here’s what needs attention across {storeName} today.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm" href="/">View store</Link>
-          <Link className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm" href="/admin/products">Products</Link>
-          <Link className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm" href="/admin/categories">Categories</Link>
-          <Link className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm" href="/admin/settings">Settings</Link>
-          <Link className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm" href="/admin/delivery">Delivery</Link>
-          <Link className="admin-primary" href="/admin/products/new">Add product</Link>
-          <AdminLogout />
+          <Link className="rounded-lg border border-[var(--line)] bg-white px-4 py-3 text-sm font-semibold" href="/admin/orders">Review orders</Link>
+          <Link className="rounded-lg bg-[var(--ink)] px-4 py-3 text-sm font-semibold text-white" href="/admin/products/new">＋ Add product</Link>
         </div>
       </header>
 
       <section aria-label="Store summary" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((card) => (
-          <article className="rounded-2xl border border-[var(--line)] bg-white p-5" key={card.label}>
-            <p className="text-sm text-(--muted)">{card.label}</p>
-            <p className="mt-5 text-3xl font-semibold tracking-[-0.035em]">{card.value}</p>
+          <article className="admin-metric-card" key={card.label}>
+            <div className="flex items-start justify-between"><p className="text-xs font-bold uppercase tracking-[0.08em] text-(--muted)">{card.label}</p><span aria-hidden="true">↗</span></div>
+            <p className="mt-6 text-3xl font-semibold tracking-[-0.035em]">{card.value}</p>
             <p className="mt-2 text-xs leading-5 text-(--muted)">{card.note}</p>
           </article>
         ))}

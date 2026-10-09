@@ -26,6 +26,11 @@ class Settings(BaseSettings):
     public_site_url: AnyHttpUrl = Field(default_factory=lambda: AnyHttpUrl("http://localhost:3000"))
     session_secret: SecretStr = Field(min_length=32)
     payment_provider: Literal["fake", "opay"] = "fake"
+    opay_environment: Literal["sandbox", "production"] = "sandbox"
+    opay_merchant_id: str | None = Field(default=None, min_length=6, max_length=64)
+    opay_public_key: SecretStr | None = Field(default=None, min_length=12, max_length=255)
+    opay_secret_key: SecretStr | None = Field(default=None, min_length=12, max_length=255)
+    opay_callback_url: AnyHttpUrl | None = None
     cloudinary_cloud_name: str | None = Field(
         default=None, min_length=1, max_length=120, pattern=r"^[A-Za-z0-9_-]+$"
     )
@@ -60,6 +65,19 @@ class Settings(BaseSettings):
             )
         if self.environment == "production" and self.payment_provider == "fake":
             raise ValueError("The fake payment provider is forbidden in production")
+        opay_values = (
+            self.opay_merchant_id,
+            self.opay_public_key,
+            self.opay_secret_key,
+            self.opay_callback_url,
+        )
+        if self.payment_provider == "opay" and not all(opay_values):
+            raise ValueError(
+                "OPay configuration must include merchant ID, public key, secret key, "
+                "and callback URL"
+            )
+        if self.environment == "production" and self.opay_environment != "production":
+            raise ValueError("Production must use the OPay production environment")
         if self.environment == "production" and not self.cors_origins:
             raise ValueError("At least one explicit CORS origin is required in production")
         if self.environment == "production" and not all(cloudinary_values):

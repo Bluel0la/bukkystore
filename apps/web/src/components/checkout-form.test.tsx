@@ -24,7 +24,7 @@ describe("CheckoutForm", () => {
 
   it("submits variant IDs with an idempotency key", async () => {
     const assign = vi.fn();
-    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ payment_url: "http://localhost:3000/checkout/payment-demo?order=BS-1", order_access_token: "private-token" }), { status: 201, headers: { "content-type": "application/json" } }));
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ payment_url: "http://localhost:3000/checkout/payment-demo?order=BS-1&token=private-token", order_access_token: "private-token" }), { status: 201, headers: { "content-type": "application/json" } }));
     vi.stubGlobal("fetch", fetchMock);
     render(<CheckoutForm areas={areas} onPaymentReady={assign} />);
     fill();

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -172,11 +173,17 @@ export function AdminProductBulkList({
                 className="flex min-w-0 flex-1 items-center justify-between gap-4"
                 href={`/admin/products/${product.id}`}
               >
-                <div className="min-w-0">
-                  <p className="truncate font-medium">{product.name}</p>
-                  <p className="mt-1 truncate text-xs text-(--muted)">
-                    {product.category.name} · {formatNaira(product.base_price_minor)} · {statusLabel(product.status)}
-                  </p>
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="relative grid h-14 w-12 shrink-0 place-items-center overflow-hidden rounded-lg bg-[var(--sand)] text-sm font-bold text-(--muted)">
+                    {product.images[0] ? <Image alt="" className="object-cover" fill sizes="48px" src={product.images[0].url} /> : product.name.slice(0, 1)}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{product.name}</p>
+                    <p className="mt-1 truncate text-xs text-(--muted)">
+                      {product.category.name} · {formatNaira(product.base_price_minor)} · {statusLabel(product.status)}
+                    </p>
+                    <p className="mt-1 text-[0.68rem] text-(--muted)">{product.variants.length} variant{product.variants.length === 1 ? "" : "s"}</p>
+                  </div>
                 </div>
                 <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${stock.tone}`}>
                   {stock.label}

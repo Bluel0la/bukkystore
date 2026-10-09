@@ -22,8 +22,8 @@ implementation now includes an adapted Kokonut Smooth Tab with URL-backed catego
 
 - Upload real merchandise photos through the existing admin photo workflow.
 - Confirm delivery areas, fees, exchange terms and store contact details.
-- Complete the real payment-provider integration and merchant onboarding; the
-  repository currently documents a development payment provider.
+- Complete OPay merchant onboarding, enter the issued sandbox credentials, and
+  run OPay's end-to-end approval tests before switching the adapter to production.
 - Schedule abandoned-reservation expiry as described in the README.
 - Run a full order/payment/fulfilment check with the configured live database and
   payment sandbox. Browser review of a storefront does not verify settlement.

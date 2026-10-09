@@ -44,7 +44,25 @@ def create_app(
         app.state.settings = resolved_settings
         app.state.database = database or Database(str(resolved_settings.database_url))
         app.state.payment_provider = payment_provider or build_payment_provider(
-            resolved_settings.payment_provider, str(resolved_settings.public_site_url)
+            resolved_settings.payment_provider,
+            str(resolved_settings.public_site_url),
+            opay_environment=resolved_settings.opay_environment,
+            opay_merchant_id=resolved_settings.opay_merchant_id,
+            opay_public_key=(
+                resolved_settings.opay_public_key.get_secret_value()
+                if resolved_settings.opay_public_key
+                else None
+            ),
+            opay_secret_key=(
+                resolved_settings.opay_secret_key.get_secret_value()
+                if resolved_settings.opay_secret_key
+                else None
+            ),
+            opay_callback_url=(
+                str(resolved_settings.opay_callback_url)
+                if resolved_settings.opay_callback_url
+                else None
+            ),
         )
         logger.info("application_started", extra={"environment": resolved_settings.environment})
         try:

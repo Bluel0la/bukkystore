@@ -42,16 +42,20 @@ availability, and a bounded low-stock indicator.
 ```text
 POST /checkout
 GET  /orders/{order_number}/payment-status?token=...
-POST /payments/{provider}/webhook
+POST /payments/opay/callback
 ```
 
 `GET /delivery-areas`, `POST /checkout`, and the private guest payment-status route
 are implemented. Development and test environments also expose
 `POST /payments/fake/confirm`; it accepts only the order number and guest access
 token, derives all provider-owned values from the database, and feeds the same
-idempotent confirmation transaction intended for real authenticated callbacks.
-The OPay callback route remains deferred until merchant documentation and
-credentials can be verified.
+idempotent confirmation transaction used by the OPay adapter.
+
+`POST /payments/opay/callback` validates OPay's HMAC-SHA3-512 callback signature,
+queries the Cashier status API with an HMAC-SHA512 authenticated server request,
+and only then applies the authoritative reference, amount, currency, and terminal
+status. Pending callbacks are acknowledged without changing order or inventory
+state.
 
 The checkout request contains:
 
