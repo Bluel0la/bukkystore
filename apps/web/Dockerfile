@@ -20,7 +20,7 @@ ENV NODE_ENV=production
 WORKDIR /workspace
 COPY --from=builder /workspace/package.json ./package.json
 COPY --from=builder /workspace/node_modules ./node_modules
-COPY --from=builder /workspace/apps/web ./apps/web
+COPY --from=builder --chown=node:node /workspace/apps/web ./apps/web
 USER node
 EXPOSE 3000
 CMD ["npm", "run", "start", "--workspace", "@bukkystore/web"]
