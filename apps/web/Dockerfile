@@ -6,6 +6,10 @@ RUN npm ci
 
 FROM node:24-alpine AS builder
 WORKDIR /workspace
+ARG NEXT_PUBLIC_SITE_URL
+ARG API_INTERNAL_URL
+ENV NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}
+ENV API_INTERNAL_URL=${API_INTERNAL_URL}
 COPY --from=dependencies /workspace/node_modules ./node_modules
 COPY --from=dependencies /workspace/apps/web/node_modules ./apps/web/node_modules
 COPY . .
